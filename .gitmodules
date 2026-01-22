@@ -1,0 +1,15 @@
+[submodule "LuminaEngine/external/glfw"]
+	path = LuminaEngine/external/glfw
+	url = https://github.com/FaithKamaraju/glfw.git
+[submodule "LuminaEngine/external/vma"]
+	path = LuminaEngine/external/vma
+	url = https://github.com/FaithKamaraju/VulkanMemoryAllocator.git
+[submodule "LuminaEngine/external/glm"]
+	path = LuminaEngine/external/glm
+	url = https://github.com/FaithKamaraju/glm.git
+[submodule "LuminaEngine/external/spdlog"]
+	path = LuminaEngine/external/spdlog
+	url = https://github.com/FaithKamaraju/spdlog.git
+[submodule "LuminaEngine/external/mINI"]
+	path = LuminaEngine/external/mINI
+	url = https://github.com/FaithKamaraju/mINI.git
