@@ -11,6 +11,7 @@
 
 namespace LE {
 
+
     struct VulkanImage {
 
         VkImageView imageView = nullptr;
@@ -26,12 +27,13 @@ namespace LE {
     inline vk::Format ToVkFormat(ImageFormat fmt) {
 
         switch (fmt) {
+            case LE::ImageFormat::Undefined: return vk::Format::eUndefined;
             // ---- 8-bit formats ----
             case LE::ImageFormat::R8_UNorm:  return vk::Format::eR8Unorm;
             case LE::ImageFormat::R8_SNorm:  return vk::Format::eR8Snorm;
             case LE::ImageFormat::R8_UInt:  return vk::Format::eR8Uint;
             case LE::ImageFormat::R8_SInt:  return vk::Format::eR8Sint;
-            case LE::ImageFormat::R8_Srgb:  return vk::Format::eR8Srgb;
+            case LE::ImageFormat::R8_SRGB:  return vk::Format::eR8Srgb;
 
             // ---- 16-bit formats ----
 
@@ -93,7 +95,7 @@ namespace LE {
         }
     }
 
-    inline vk::ImageUsageFlags ToVkUsage(ImageUsageFlags usage) {
+    inline vk::ImageUsageFlags ToVkImageUsage(ImageUsageFlags usage) {
 
         vk::ImageUsageFlags flags{};
 

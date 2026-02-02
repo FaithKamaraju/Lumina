@@ -11,6 +11,7 @@
 #include "Core/Window.h"
 #include "../Game.h"
 #include "Layers/LayerStack.h"
+#include "Resource/ResourceManager.h"
 
 
 
@@ -27,6 +28,11 @@ LEBool LE::Engine::InitializeSubSystems() {
                         m_Config.window_config.fullscreen);
 
     m_LayerStack = new LayerStack();
+
+    m_ResourceManager = new ResourceManager(nullptr);
+
+    // auto model = m_ResourceManager->ImportGLTFFile("../../../Resources/Models/DamagedHelmet.gltf", "DH_gltf");
+    // auto model = m_ResourceManager->LoadSceneAsset("../../../Assets/DH_gltf.LEASSET");
     // m_LayerStack->PushLayer(new ImguiLayer());
 
     // m_RHIDevice = new Vulkan::RHI();

@@ -8,14 +8,13 @@
 #include "Core/Logger.h"
 #include <GLFW/glfw3.h>
 #include "glm/glm.hpp"
-#include "shaderc/shaderc.hpp"
+
 #include "Platform/Vulkan/QueueFamilyIndices.h"
 #include "Rendering/VertexInput.h"
 
 
 
-inline shaderc::CompileOptions* g_CompileOptions;
-inline shaderc::Compiler* g_ShaderCompiler;
+
 
 inline constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -93,14 +92,14 @@ namespace LE::Utils {
         return descInfo;
     }
 
-    inline std::array<vk::VertexInputAttributeDescription, 3> GetVertexInputAttributeDescriptions() {
-
-        return {
-            vk::VertexInputAttributeDescription( 0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos) ),
-            vk::VertexInputAttributeDescription( 1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color) ),
-            vk::VertexInputAttributeDescription( 2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord) )
-        };
-    }
+    // inline std::array<vk::VertexInputAttributeDescription, 3> GetVertexInputAttributeDescriptions() {
+    //
+    //     return {
+    //         vk::VertexInputAttributeDescription( 0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos) ),
+    //         vk::VertexInputAttributeDescription( 1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color) ),
+    //         vk::VertexInputAttributeDescription( 2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord) )
+    //     };
+    // }
     void createMoltenVkLayerSettings(vk::InstanceCreateInfo& instanceInfo);
     bool CheckValidationLayerSupport();
     std::vector<const char*> GetRequiredExtensions();
@@ -115,11 +114,6 @@ namespace LE::Utils {
     vk::PresentModeKHR ChoosePresentMode(const std::vector<vk::PresentModeKHR>& presentModes);
     vk::Extent2D ChooseSwapExtent(GLFWwindow* window, const vk::SurfaceCapabilitiesKHR& capabilities);
 
-    void InitializeShadercCompiler(shaderc_optimization_level optimization_level = shaderc_optimization_level_zero, shaderc_source_language sourceLanguage = shaderc_source_language_glsl);
-    void CleanupShaderc();
-    std::vector<char> ReadShaderSource(const char* filePath);
-    std::vector<uint32_t> CompileShader(const char* code, shaderc_shader_kind shaderKind, const char* source_name, const shaderc::CompileOptions* compileOptions = g_CompileOptions);
-    std::vector<char> ReadSPVFile(const std::string& filename);
     vk::ShaderModule CreateShaderModule(vk::Device device, std::vector<uint32_t>& code);
 
     uint32_t FindMemoryType(vk::PhysicalDevice physicalDevice, uint32_t typeFilter, vk::MemoryPropertyFlags properties);

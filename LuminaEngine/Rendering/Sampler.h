@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include <cereal/cereal.hpp>
 
 namespace LE {
 
@@ -45,6 +46,7 @@ namespace LE {
     }
 
     struct SamplerKey {
+
         Filter magFilter;
         Filter minFilter;
         SamplerMipmapMode mipmapMode;
@@ -63,31 +65,29 @@ namespace LE {
 
         size_t hashID{};
 
-        size_t GenerateHash() const {
-            size_t h = 0;
+        void GenerateHash(){
 
-            HashCombine(h, std::hash<Filter>{}(magFilter));
-            HashCombine(h, std::hash<Filter>{}(minFilter));
-            HashCombine(h, std::hash<SamplerMipmapMode>{}(mipmapMode));
+            HashCombine(hashID, std::hash<Filter>{}(magFilter));
+            HashCombine(hashID, std::hash<Filter>{}(minFilter));
+            HashCombine(hashID, std::hash<SamplerMipmapMode>{}(mipmapMode));
 
-            HashCombine(h, std::hash<SamplerAddressMode>{}(addressModeU));
-            HashCombine(h, std::hash<SamplerAddressMode>{}(addressModeV));
-            HashCombine(h, std::hash<SamplerAddressMode>{}(addressModeW));
+            HashCombine(hashID, std::hash<SamplerAddressMode>{}(addressModeU));
+            HashCombine(hashID, std::hash<SamplerAddressMode>{}(addressModeV));
+            HashCombine(hashID, std::hash<SamplerAddressMode>{}(addressModeW));
 
-            HashCombine(h, std::hash<float>{}(mipLodBias));
-            HashCombine(h, std::hash<bool>{}(anisotropyEnable));
+            HashCombine(hashID, std::hash<float>{}(mipLodBias));
+            HashCombine(hashID, std::hash<bool>{}(anisotropyEnable));
             // HashCombine(h, std::hash<float>{}(maxAnisotropy));
 
-            HashCombine(h, std::hash<bool>{}(compareEnable));
-            HashCombine(h, std::hash<CompareOp>{}(compareOp));
+            HashCombine(hashID, std::hash<bool>{}(compareEnable));
+            HashCombine(hashID, std::hash<CompareOp>{}(compareOp));
 
-            HashCombine(h, std::hash<float>{}(minLod));
-            HashCombine(h, std::hash<float>{}(maxLod));
+            HashCombine(hashID, std::hash<float>{}(minLod));
+            HashCombine(hashID, std::hash<float>{}(maxLod));
 
             // HashCombine(h, std::hash<uint32_t>{}(borderColor));
-            HashCombine(h, std::hash<bool>{}(unnormalizedCoordinates));
+            HashCombine(hashID, std::hash<bool>{}(unnormalizedCoordinates));
 
-            return h;
         }
 
         bool operator==(const SamplerKey& a) const {
@@ -96,6 +96,8 @@ namespace LE {
         bool operator!=(const SamplerKey& a) const {
             return this->hashID != a.hashID;
         }
+
+
 
     };
     

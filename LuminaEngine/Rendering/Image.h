@@ -4,27 +4,42 @@
 
 #pragma once
 
+
 namespace LE {
 
     struct ImageExtent2D {
         uint32_t    width;
         uint32_t    height;
+
+        template<class Archive>
+        void serialize(Archive& archive) {
+            archive(width, height);
+
+        }
     };
 
     struct ImageExtent3D {
         uint32_t    width;
         uint32_t    height;
         uint32_t    depth;
+
+        template<class Archive>
+        void serialize(Archive& archive) {
+            archive(width, height, depth);
+
+        }
     };
 
     enum class ImageFormat
     {
+        Undefined,
         // ---- 8-bit formats ----
         R8_UNorm,
         R8_SNorm,
         R8_UInt,
         R8_SInt,
-        R8_Srgb,
+        R8_SRGB,
+
 
         // ---- 16-bit formats ----
 

@@ -9,6 +9,8 @@
 #include "VulkanContext.h"
 #include "VulkanSwapChain.h"
 #include "FrameData.h"
+#include "VulkanPipeline.h"
+
 
 struct GLFWwindow;
 
@@ -16,6 +18,7 @@ namespace LE {
 
     struct VulkanImageSlot {
         VulkanImage image{};
+        size_t hashName{};
         uint32_t generation{};
     };
 
@@ -27,6 +30,11 @@ namespace LE {
     struct VulkanSamplerSlot {
         VkSampler sampler = VK_NULL_HANDLE;
         size_t hashID{};
+        uint32_t generation{};
+    };
+
+    struct VulkanPipelineSlot {
+        VulkanPipeline pipeline{};
         uint32_t generation{};
     };
 
@@ -45,15 +53,19 @@ namespace LE {
         LEBool InitImgui() override;
 
         // API
-        BufferHandle AllocateVertexBuffer(const std::vector<Vertex>& vertices) override;
-        BufferHandle AllocateIndexBuffer(const std::vector<uint32_t>& indices) override;
-        BufferHandle AllocateUniformBuffer(size_t uniformBufferSize) override;
+        BufferHandle AllocateAndCopyBufferFromBytes(const std::byte* dataSource, size_t dataSize, BufferUsageFlags usage) override;
+        BufferHandle AllocateAndCopyVertexBuffer(const std::vector<Vertex>& vertices) override;
+        BufferHandle AllocateAndCopyIndexBuffer(const std::vector<uint32_t>& indices) override;
+        BufferHandle AllocateAndCopyUniformBuffer(size_t uniformBufferSize) override;
         void CopyUniformData(BufferHandle ub, void* uniformData, size_t dataSize) override;
         void DeallocateBuffer(BufferHandle handle) override;
-        ImageHandle CreateImage(unsigned char* data, uint32_t nrChannels, ImageExtent3D imagesize, ImageFormat format, ImageUsageFlags imageUsage, bool mipmapped) override;\
+        ImageHandle CreateImage(size_t hashedName , unsigned char* data, uint32_t nrChannels, ImageExtent3D imagesize, ImageFormat format, ImageUsageFlags imageUsage, bool mipmapped) override;\
         void DestroyImage(ImageHandle handle) override;
         SamplerHandle CreateImageSampler(SamplerKey samplerInfo) override;
         void DestroyImageSampler(SamplerHandle samplerHandle) override;
+        PipelineHandle CreateGraphicsPipeline(GraphicsPipelineDesc desc) override;
+        PipelineHandle CreateComputePipeline(ComputePipelineDesc desc) override;
+
 
         void DrawFrame(const std::vector<Renderable>& renderables, float timestep) override;
         void ProcessDeferredFrees() override;
@@ -78,10 +90,10 @@ namespace LE {
 
 
         // Image handling
-        ImageHandle bindImage(const VulkanImage& image);
+        ImageHandle bindImage(const VulkanImage& image, size_t hashName);
         void unbindImage(ImageHandle handle, VkFence fenceForCurrentFrame);
         void processDeferredFrees_Images();
-        uint32_t allocImageIndex(const VulkanImage& image);
+        uint32_t allocImageIndex(const VulkanImage& image, size_t hashName);
         bool isAlive(ImageHandle handle) const;
         void freeImageIndex(uint32_t idx);
 

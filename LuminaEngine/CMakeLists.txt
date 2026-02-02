@@ -22,19 +22,19 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     #    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
 endif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 
-#set(SHADERC_ENABLE_SHARED_CRT ON)
+set(SHADERC_ENABLE_SHARED_CRT ON)
 #set(IMGUI_DIR external/imgui)
-##set(SHADERC_SKIP_INSTALL ON)
-#set(SHADERC_SKIP_TESTS ON)
-#set(SHADERC_SKIP_EXAMPLES ON)
+#set(SHADERC_SKIP_INSTALL ON)
+set(SHADERC_SKIP_TESTS ON)
+set(SHADERC_SKIP_EXAMPLES ON)
 
 
 find_package(Vulkan REQUIRED)
 add_subdirectory(external/glfw/)
 add_subdirectory(external/glm/)
 add_subdirectory(external/spdlog/)
-#add_subdirectory(external/shaderc/)
-#add_subdirectory(external/fastgltf/)
+add_subdirectory(external/shaderc/)
+add_subdirectory(external/fastgltf/)
 #add_subdirectory(external/volk/)
 
 add_library(VulkanCppModule INTERFACE)
@@ -49,12 +49,14 @@ target_compile_definitions(VulkanCppModule
 
 add_library(${PROJECT_NAME} STATIC
 
-        # mINI files
+        # enkiTS files
+        external/enkiTS/src/TaskScheduler.cpp
 
+        # mINI files
         external/mINI/src/mini/ini.h
 
         # stb_image files
-        external/stbImage/stb_image.cpp
+        external/stbimage/stb_image.cpp
 
         # Vulkan Memory Allocator
         external/vma/src/VmaUsage.h
@@ -115,9 +117,24 @@ add_library(${PROJECT_NAME} STATIC
         Platform/Vulkan/Descriptors.h
         Platform/Vulkan/VulkanSampler.h
         Rendering/Renderable.h
+        Rendering/Pipeline.h
+        Core/TasksManager.cpp
+        Core/TasksManager.h
+        Platform/Vulkan/VulkanPipeline.cpp
+        Platform/Vulkan/VulkanPipeline.h
+        Rendering/Shader.h
+        Resource/LoadedGLTF.h
+        Resource/MeshAsset.h
+        Resource/Scene.h
+        Resource/MaterialAsset.h
+        Resource/TextureAsset.h
+        Core/MathUtils.h
+        Core/CerealUtils.h
+        Rendering/Scenegraph.cpp
+        Rendering/Scenegraph.h
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC glfw glm spdlog Vulkan::cppm )
+target_link_libraries(${PROJECT_NAME} PUBLIC glfw glm spdlog Vulkan::cppm shaderc_combined fastgltf )
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE lepch.h)
 
@@ -130,10 +147,14 @@ target_include_directories(${PROJECT_NAME} PUBLIC external/glfw/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC external/glm/)
 target_include_directories(${PROJECT_NAME} PUBLIC external/spdlog/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC external/mINI/src/)
-target_include_directories(${PROJECT_NAME} PRIVATE external/stbImage/)
+target_include_directories(${PROJECT_NAME} PUBLIC external/stbImage/)
+target_include_directories(${PROJECT_NAME} PRIVATE external/enkiTS/src/)
+target_include_directories(${PROJECT_NAME} PRIVATE external/cereal/include/)
 target_include_directories(${PROJECT_NAME} PRIVATE external/vma/include/)
 target_include_directories(${PROJECT_NAME} PRIVATE external/vma/src/)
-#target_include_directories(${PROJECT_NAME} PRIVATE external/fastgltf/include)
+target_include_directories(${PROJECT_NAME} PRIVATE external/shaderc/libshaderc/include/)
+target_include_directories(${PROJECT_NAME} PRIVATE external/shaderc/libshaderc_util/include/)
+target_include_directories(${PROJECT_NAME} PRIVATE external/fastgltf/include)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ./)
 

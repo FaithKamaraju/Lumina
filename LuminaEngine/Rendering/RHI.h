@@ -8,6 +8,7 @@
 #include "Image.h"
 #include "Buffer.h"
 #include "Sampler.h"
+#include "Pipeline.h"
 #include "VertexInput.h"
 #include "Rendering/Renderable.h"
 
@@ -24,16 +25,19 @@ namespace LE {
 
         virtual LEBool InitDevice(GLFWwindow* windowHandle) = 0;
         virtual LEBool InitImgui() = 0;
-        virtual BufferHandle AllocateVertexBuffer(const std::vector<Vertex>& vertices) = 0;
-        virtual BufferHandle AllocateIndexBuffer(const std::vector<uint32_t>& indices) = 0;
-        virtual BufferHandle AllocateUniformBuffer(size_t uniformBufferSize) = 0;
+        virtual BufferHandle AllocateAndCopyBufferFromBytes(const std::byte* dataSource, size_t dataSize, BufferUsageFlags usage) = 0;
+        virtual BufferHandle AllocateAndCopyVertexBuffer(const std::vector<Vertex>& vertices) = 0;
+        virtual BufferHandle AllocateAndCopyIndexBuffer(const std::vector<uint32_t>& indices) = 0;
+        virtual BufferHandle AllocateAndCopyUniformBuffer(size_t uniformBufferSize) = 0;
         virtual void CopyUniformData(BufferHandle ub, void* uniformData, size_t dataSize) = 0;
         virtual void DeallocateBuffer(BufferHandle handle) = 0;
-        virtual ImageHandle CreateImage(unsigned char* data, uint32_t nrChannels, ImageExtent3D imagesize, ImageFormat format,
+        virtual ImageHandle CreateImage(size_t hashedName, unsigned char* data, uint32_t nrChannels, ImageExtent3D imagesize, ImageFormat format,
                             ImageUsageFlags imageUsage, bool mipmapped) = 0;
         virtual void DestroyImage(ImageHandle handle) = 0;
         virtual SamplerHandle CreateImageSampler(SamplerKey samplerInfo) = 0;
         virtual void DestroyImageSampler(SamplerHandle samplerHandle) = 0;
+        virtual PipelineHandle CreateGraphicsPipeline(GraphicsPipelineDesc desc) = 0;
+        virtual PipelineHandle CreateComputePipeline(ComputePipelineDesc desc) = 0;
 
         virtual void ProcessDeferredFrees() = 0;
 

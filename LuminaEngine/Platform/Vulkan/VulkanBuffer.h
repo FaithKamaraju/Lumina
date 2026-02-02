@@ -18,6 +18,24 @@ namespace LE {
         VmaAllocationInfo info{};
     };
 
+    inline vk::BufferUsageFlags ToVkBufferUsageFlags(BufferUsageFlags flag) {
+
+        vk::BufferUsageFlags flags{};
+
+        if (Any(flag & BufferUsageFlags::TransferSrc))  flags |= vk::BufferUsageFlagBits::eTransferSrc;
+        if (Any(flag & BufferUsageFlags::TransferDst))  flags |= vk::BufferUsageFlagBits::eTransferDst;
+
+        if (Any(flag & BufferUsageFlags::UniformBuffer))   flags |= vk::BufferUsageFlagBits::eUniformBuffer;
+        if (Any(flag & BufferUsageFlags::StorageBuffer))  flags |= vk::BufferUsageFlagBits::eStorageBuffer;
+
+        if (Any(flag & BufferUsageFlags::IndexBuffer)) flags |= vk::BufferUsageFlagBits::eIndexBuffer;
+        if (Any(flag & BufferUsageFlags::VertexBuffer)) flags |= vk::BufferUsageFlagBits::eVertexBuffer;
+
+        if (Any(flag & BufferUsageFlags::ShaderDeviceAddress))       flags |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
+
+        return flags;
+
+    }
 
 
     namespace Buffers {

@@ -3,8 +3,9 @@
 //
 
 #include "Descriptors.h"
+#include "VulkanContext.h"
 
-void LE::DescriptorAllocator::InitPool(VulkanContext &ctx, uint32_t maxSets, std::span<PoolSize> sizes,
+void LE::DescriptorAllocator::InitPool(VulkanContext *ctx, uint32_t maxSets, std::span<PoolSize> sizes,
     vk::DescriptorPoolCreateFlags poolFlags) {
 
     std::vector<vk::DescriptorPoolSize> poolSizes;
@@ -20,18 +21,18 @@ void LE::DescriptorAllocator::InitPool(VulkanContext &ctx, uint32_t maxSets, std
     poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.flags = poolFlags;
 
-    pool = ctx.device.createDescriptorPool(poolInfo);
+    pool = ctx->device.createDescriptorPool(poolInfo);
 }
 
-void LE::DescriptorAllocator::ClearDescriptors(VulkanContext &ctx) const {
-    ctx.device.resetDescriptorPool(pool);
+void LE::DescriptorAllocator::ClearDescriptors(VulkanContext *ctx) const {
+    ctx->device.resetDescriptorPool(pool);
 }
 
-void LE::DescriptorAllocator::DestroyPool(VulkanContext &ctx) const {
-    ctx.device.destroyDescriptorPool(pool);
+void LE::DescriptorAllocator::DestroyPool(VulkanContext *ctx) const {
+    ctx->device.destroyDescriptorPool(pool);
 }
 
-vk::DescriptorSet LE::DescriptorAllocator::Allocate(VulkanContext &ctx, vk::DescriptorSetLayout layout,
+vk::DescriptorSet LE::DescriptorAllocator::Allocate(VulkanContext *ctx, vk::DescriptorSetLayout layout,
     void *pnext) const {
     vk::DescriptorSetAllocateInfo allocInfo{};
     allocInfo.descriptorPool = pool;
@@ -39,10 +40,10 @@ vk::DescriptorSet LE::DescriptorAllocator::Allocate(VulkanContext &ctx, vk::Desc
     allocInfo.pSetLayouts = &layout;
     allocInfo.pNext = pnext;
 
-    return ctx.device.allocateDescriptorSets(allocInfo).front();
+    return ctx->device.allocateDescriptorSets(allocInfo).front();
 }
 
-std::vector<vk::DescriptorSet> LE::DescriptorAllocator::Allocate(VulkanContext &ctx,
+std::vector<vk::DescriptorSet> LE::DescriptorAllocator::Allocate(VulkanContext *ctx,
     const std::vector<vk::DescriptorSetLayout> &layouts, void *pnext) const {
 
     vk::DescriptorSetAllocateInfo allocInfo{};
@@ -50,7 +51,7 @@ std::vector<vk::DescriptorSet> LE::DescriptorAllocator::Allocate(VulkanContext &
     allocInfo.descriptorSetCount = static_cast<uint32_t>(layouts.size());
     allocInfo.pSetLayouts = layouts.data();
 
-    return ctx.device.allocateDescriptorSets(allocInfo);
+    return ctx->device.allocateDescriptorSets(allocInfo);
 }
 
 
@@ -70,7 +71,7 @@ void LE::DescriptorBuilder::AddBinding(uint32_t binding, vk::DescriptorType type
     bindings.push_back(newBinding);
 }
 
-vk::DescriptorSetLayout LE::DescriptorBuilder::Build(VulkanContext &ctx,
+vk::DescriptorSetLayout LE::DescriptorBuilder::Build(VulkanContext *ctx,
     vk::DescriptorSetLayoutCreateFlags setInfoflags, vk::DescriptorBindingFlags *bindingFlags) {
 
     vk::DescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsCreateInfo{};
@@ -86,7 +87,7 @@ vk::DescriptorSetLayout LE::DescriptorBuilder::Build(VulkanContext &ctx,
         .pBindings = bindings.data(),
 
     };
-    return ctx.device.createDescriptorSetLayout(layoutInfo, nullptr);
+    return ctx->device.createDescriptorSetLayout(layoutInfo, nullptr);
 }
 
 void LE::DescriptorBuilder::Clear() {

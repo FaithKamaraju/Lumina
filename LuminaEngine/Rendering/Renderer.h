@@ -4,9 +4,18 @@
 
 #pragma once
 
+
+
 namespace LE {
 
     class Renderer {
+
+    public:
+        Renderer();
+        ~Renderer();
+
+    private:
+
 
     };
 

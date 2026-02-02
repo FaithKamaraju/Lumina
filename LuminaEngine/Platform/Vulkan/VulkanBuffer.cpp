@@ -173,11 +173,3 @@ void LE::Buffers::destroyBuffer(VulkanContext& ctx, const VulkanBuffer &buffer) 
 
 }
 
-LE::VulkanBuffer LE::Buffers::AllocateUniformBuffer(VulkanContext& ctx, size_t uniformBufferSize) {
-
-
-}
-
-void LE::Buffers::CopyUniformData(VulkanContext& ctx, VulkanBuffer &ub, void *uniformData, size_t dataSize) {
-
-}

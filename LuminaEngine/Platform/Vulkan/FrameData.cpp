@@ -22,7 +22,7 @@ void LE::FrameData::constructDescriptorSetLayouts(VulkanContext& ctx) {
         DescriptorBuilder builder{};
         builder.AddBinding(0, vk::DescriptorType::eUniformBuffer, 1,
             vk::ShaderStageFlagBits::eVertex, nullptr );
-        sceneDescriptorLayout =  builder.Build(ctx,{},nullptr);
+        sceneDescriptorLayout =  builder.Build(&ctx,{},nullptr);
     }
 
     {
@@ -33,7 +33,7 @@ void LE::FrameData::constructDescriptorSetLayouts(VulkanContext& ctx) {
                                                 vk::DescriptorBindingFlagBits::eUpdateUnusedWhilePending |
                                                 vk::DescriptorBindingFlagBits::eVariableDescriptorCount |
                                                 vk::DescriptorBindingFlagBits::ePartiallyBound;
-        bindlessTexturesLayout = builder.Build(ctx,vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool, &bindingFlags);
+        bindlessTexturesLayout = builder.Build(&ctx,vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool, &bindingFlags);
     }
 
     {
@@ -44,7 +44,7 @@ void LE::FrameData::constructDescriptorSetLayouts(VulkanContext& ctx) {
                                                 vk::DescriptorBindingFlagBits::eUpdateUnusedWhilePending |
                                                 vk::DescriptorBindingFlagBits::eVariableDescriptorCount |
                                                 vk::DescriptorBindingFlagBits::ePartiallyBound;
-        bindlessSamplersLayout = builder.Build(ctx,vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool, &bindingFlags);
+        bindlessSamplersLayout = builder.Build(&ctx,vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool, &bindingFlags);
     }
 }
 

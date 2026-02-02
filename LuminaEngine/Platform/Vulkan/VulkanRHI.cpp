@@ -53,7 +53,7 @@ LEBool LE::VulkanRHI::InitDevice(GLFWwindow* windowHandle) {
 
     initSubmitSemaphores();
     vkCtx.InitPools();
-    vkCtx.descriptorAllocator.InitPool(FrameData::maxSets, FrameData::sizes, vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind);
+    vkCtx.descriptorAllocator.InitPool(&vkCtx, FrameData::maxSets, FrameData::sizes, vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind);
     createPerFrameData();
 
     LE::Events::Subscribe<LE::WindowFramebufferResizeEvent>([this](const LE::WindowFramebufferResizeEvent &e) {
@@ -66,9 +66,25 @@ LEBool LE::VulkanRHI::InitDevice(GLFWwindow* windowHandle) {
 
 LEBool LE::VulkanRHI::InitImgui() {
 
+    return LE_SUCCESS;
 }
 
-LE::BufferHandle LE::VulkanRHI::AllocateVertexBuffer(const std::vector<Vertex> &vertices) {
+LE::BufferHandle LE::VulkanRHI::AllocateAndCopyBufferFromBytes(const std::byte *dataSource, size_t dataSize, BufferUsageFlags usage) {
+
+    vk::BufferCreateInfo bufferInfo{
+        .size = dataSize,
+        .usage = ToVkBufferUsageFlags(usage) | vk::BufferUsageFlagBits::eTransferDst,
+        .sharingMode = vkCtx.queueIndicesArr.size() > 1 ?  vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
+        .queueFamilyIndexCount = static_cast<uint32_t>(vkCtx.queueIndicesArr.size()),
+        .pQueueFamilyIndices = vkCtx.queueIndicesArr.data()
+    };
+    VulkanBuffer buf = Buffers::allocateBuffer(vkCtx, bufferInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+    Buffers::copyData(vkCtx, buf, (void*)dataSource, dataSize);
+
+    return bindBuffer(buf);
+}
+
+LE::BufferHandle LE::VulkanRHI::AllocateAndCopyVertexBuffer(const std::vector<Vertex> &vertices) {
 
     vk::BufferCreateInfo bufferInfo{
         .size = vertices.size() * sizeof(vertices[0]),
@@ -86,7 +102,7 @@ LE::BufferHandle LE::VulkanRHI::AllocateVertexBuffer(const std::vector<Vertex> &
 
 }
 
-LE::BufferHandle LE::VulkanRHI::AllocateIndexBuffer(const std::vector<uint32_t> &indices) {
+LE::BufferHandle LE::VulkanRHI::AllocateAndCopyIndexBuffer(const std::vector<uint32_t> &indices) {
 
     vk::BufferCreateInfo bufferInfo{
         .size = indices.size() * sizeof(indices[0]),
@@ -103,7 +119,7 @@ LE::BufferHandle LE::VulkanRHI::AllocateIndexBuffer(const std::vector<uint32_t> 
     return bindBuffer(buf);
 }
 
-LE::BufferHandle LE::VulkanRHI::AllocateUniformBuffer(size_t uniformBufferSize) {
+LE::BufferHandle LE::VulkanRHI::AllocateAndCopyUniformBuffer(size_t uniformBufferSize) {
     vk::BufferCreateInfo bufferInfo{
         .size = uniformBufferSize,
         .usage = vk::BufferUsageFlagBits::eUniformBuffer |
@@ -190,8 +206,14 @@ void LE::VulkanRHI::CopyUniformData(BufferHandle ub, void *uniformData, size_t d
     }
 }
 
-LE::ImageHandle LE::VulkanRHI::CreateImage(unsigned char *data, uint32_t nrChannels, ImageExtent3D imagesize, ImageFormat format,
+LE::ImageHandle LE::VulkanRHI::CreateImage(size_t hashedName, unsigned char *data, uint32_t nrChannels, ImageExtent3D imagesize, ImageFormat format,
                                            ImageUsageFlags imageUsage, bool mipmapped) {
+
+    for (uint32_t i = 0; i < m_Images.size(); i++) {
+        if (hashedName == m_Images[i].hashName) {
+            return {.id = i, .generation = m_Images[i].generation};
+        }
+    }
 
     VulkanImage texture{};
     vk::ImageCreateInfo imageInfo{};
@@ -204,7 +226,7 @@ LE::ImageHandle LE::VulkanRHI::CreateImage(unsigned char *data, uint32_t nrChann
     imageInfo.tiling = vk::ImageTiling::eOptimal;
     imageInfo.initialLayout = vk::ImageLayout::eUndefined;
     imageInfo.samples = vk::SampleCountFlagBits::e1;
-    imageInfo.usage = vk::ImageUsageFlagBits::eTransferDst | ToVkUsage(imageUsage);
+    imageInfo.usage = vk::ImageUsageFlagBits::eTransferDst | ToVkImageUsage(imageUsage);
     imageInfo.sharingMode = vkCtx.queueIndicesArr.size() > 1 ?  vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive;
     imageInfo.queueFamilyIndexCount = static_cast<uint32_t>(vkCtx.queueIndicesArr.size());
     imageInfo.pQueueFamilyIndices = vkCtx.queueIndicesArr.data();
@@ -213,7 +235,7 @@ LE::ImageHandle LE::VulkanRHI::CreateImage(unsigned char *data, uint32_t nrChann
     Images::copyData(vkCtx, texture, data, imagesize.width * imagesize.height * nrChannels);
     Images::createImageView(vkCtx, texture, vk::ImageAspectFlagBits::eColor);
 
-    return bindImage(texture);
+    return bindImage(texture, hashedName);
 }
 
 LE::SamplerHandle LE::VulkanRHI::CreateImageSampler(SamplerKey samplerInfo) {
@@ -247,8 +269,14 @@ void LE::VulkanRHI::DestroyImageSampler(SamplerHandle samplerHandle) {
     unbindSampler(samplerHandle, perFrameData[currentFrame].inFlightFence);
 }
 
+LE::PipelineHandle LE::VulkanRHI::CreateGraphicsPipeline(GraphicsPipelineDesc desc) {
+    return {};
 
+}
 
+LE::PipelineHandle LE::VulkanRHI::CreateComputePipeline(ComputePipelineDesc desc) {
+    return {};
+}
 
 
 void LE::VulkanRHI::DrawFrame(const std::vector<Renderable>& renderables, float timestep) {
@@ -272,7 +300,7 @@ void LE::VulkanRHI::DrawFrame(const std::vector<Renderable>& renderables, float 
     recordCommands(renderables, currentFrame, result.value, timestep);
 
 
-    updateUniformsBuffers(currentFrame, timestep);
+    // updateUniformsBuffers(currentFrame, timestep);
 
     vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput};
     vk::SubmitInfo submitInfo{
@@ -337,7 +365,7 @@ void LE::VulkanRHI::createPerFrameData() {
         perFrameData[i] = {};
         perFrameData[i].initSyncObjects(vkCtx);
 
-        perFrameData[i].uniformBuffer = AllocateUniformBuffer(sizeof(SceneUniformBuffer));
+        perFrameData[i].uniformBuffer = AllocateAndCopyUniformBuffer(sizeof(SceneUniformBuffer));
         perFrameData[i].sceneDescriptorSet = allocateDescriptor(FrameData::sceneDescriptorLayout);
         writeUniformBuffer(perFrameData[i].uniformBuffer, sizeof(SceneUniformBuffer),
             perFrameData[i].sceneDescriptorSet);
@@ -418,12 +446,12 @@ void LE::VulkanRHI::recordCommands(const std::vector<Renderable>& renderables, u
 
     perFrameData[frameIndex].graphicsCommandBuffer.beginRendering(renderingInfo);
 
-    perFrameData[frameIndex].graphicsCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_Materials[0]->pipeline);
+    // perFrameData[frameIndex].graphicsCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_Materials[0]->pipeline);
 
     // vk::Buffer vertexBuffers[] = {testObj->mesh.vertexBuffer.buffer};
     // vk::DeviceSize offsets[] = {0};
     // m_perFrameData[frameIndex].graphicsCommandBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
-    perFrameData[frameIndex].graphicsCommandBuffer.bindIndexBuffer(testObj->mesh.indexBuffer.buffer, 0, vk::IndexType::eUint32);
+    // perFrameData[frameIndex].graphicsCommandBuffer.bindIndexBuffer(testObj->mesh.indexBuffer.buffer, 0, vk::IndexType::eUint32);
 
     vk::Viewport viewport{};
     viewport.x = 0.0f;
@@ -439,23 +467,23 @@ void LE::VulkanRHI::recordCommands(const std::vector<Renderable>& renderables, u
     scissor.extent = swapChain.m_SwapChainExtent;
     perFrameData[frameIndex].graphicsCommandBuffer.setScissor(0, scissor);
 
-    FrameData::PerObjectConstants object{};
-    object.bufferAddress = testObj->mesh.vertexBufAdd;
-    object.albedoIndex = testObj->m_MaterialInstance->textureIndex.index;
-    object.model = glm::mat4(1.0f);
-    object.model = glm::rotate(object.model, timestep * glm::radians(60.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-     perFrameData[frameIndex].graphicsCommandBuffer.pushConstants(m_Materials[0]->pipelineLayout,
-         vk::ShaderStageFlagBits::eFragment|vk::ShaderStageFlagBits::eVertex, 0, sizeof(FrameData::PerObjectConstants),&object);
-
-    std::array descSets = {
-        perFrameData[frameIndex].sceneDescriptorSet, perFrameData[frameIndex].bindlessTexturesDescriptorSet
-    };
-    perFrameData[frameIndex].graphicsCommandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_Materials[0]->pipelineLayout, 0,
-        2, descSets.data(), 0, nullptr);
-
-
-    perFrameData[frameIndex].graphicsCommandBuffer.drawIndexed(static_cast<uint32_t>(indices.size()),
-        1, 0, 0, 0);
+    // FrameData::PerObjectConstants object{};
+    // object.bufferAddress = testObj->mesh.vertexBufAdd;
+    // object.albedoIndex = testObj->m_MaterialInstance->textureIndex.index;
+    // object.model = glm::mat4(1.0f);
+    // object.model = glm::rotate(object.model, timestep * glm::radians(60.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    //  perFrameData[frameIndex].graphicsCommandBuffer.pushConstants(m_Materials[0]->pipelineLayout,
+    //      vk::ShaderStageFlagBits::eFragment|vk::ShaderStageFlagBits::eVertex, 0, sizeof(FrameData::PerObjectConstants),&object);
+    //
+    // std::array descSets = {
+    //     perFrameData[frameIndex].sceneDescriptorSet, perFrameData[frameIndex].bindlessTexturesDescriptorSet
+    // };
+    // perFrameData[frameIndex].graphicsCommandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_Materials[0]->pipelineLayout, 0,
+    //     2, descSets.data(), 0, nullptr);
+    //
+    //
+    // perFrameData[frameIndex].graphicsCommandBuffer.drawIndexed(static_cast<uint32_t>(indices.size()),
+    //     1, 0, 0, 0);
 
     // ImDrawData* draw_data = ImGui::GetDrawData();
     // const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
@@ -490,7 +518,7 @@ void LE::VulkanRHI::recordCommands(const std::vector<Renderable>& renderables, u
 
     // Descriptor Allocation code
 vk::DescriptorSet LE::VulkanRHI::allocateDescriptor(vk::DescriptorSetLayout layout) {
-    return vkCtx.descriptorAllocator.Allocate(layout, nullptr);
+    return vkCtx.descriptorAllocator.Allocate(&vkCtx,layout, nullptr);
 }
 
 vk::DescriptorSet LE::VulkanRHI::allocateVariableCountDescriptor(uint32_t descriptorCount, vk::DescriptorSetLayout layout) {
@@ -499,7 +527,7 @@ vk::DescriptorSet LE::VulkanRHI::allocateVariableCountDescriptor(uint32_t descri
     variableDescriptorCountAllocInfo.descriptorSetCount = 1;
     variableDescriptorCountAllocInfo.pDescriptorCounts  = &descriptorCount;
 
-    return vkCtx.descriptorAllocator.Allocate(layout, &variableDescriptorCountAllocInfo);
+    return vkCtx.descriptorAllocator.Allocate(&vkCtx, layout, &variableDescriptorCountAllocInfo);
 }
 
     // Descriptor Writing Code
@@ -559,9 +587,9 @@ void LE::VulkanRHI::writeUniformBuffer(BufferHandle bufferHandle, size_t ub_size
 
 // Image Handling section
 
-LE::ImageHandle LE::VulkanRHI::bindImage(const VulkanImage &image) {
+LE::ImageHandle LE::VulkanRHI::bindImage(const VulkanImage &image, size_t hashName) {
 
-    uint32_t idx = allocImageIndex(image);
+    uint32_t idx = allocImageIndex(image, hashName);
     m_Images[idx].generation++;
 
     ImageHandle handle{.id = idx, .generation = m_Images[idx].generation};
@@ -575,17 +603,17 @@ void LE::VulkanRHI::unbindImage(ImageHandle handle, VkFence fenceForCurrentFrame
 
 }
 
-uint32_t LE::VulkanRHI::allocImageIndex(const VulkanImage& image) {
+uint32_t LE::VulkanRHI::allocImageIndex(const VulkanImage& image, size_t hashName) {
     uint32_t idx{};
     if (!m_ImagesFreeList.empty())
     {
         idx = m_ImagesFreeList.back();
         m_ImagesFreeList.pop_back();
-        m_Images[idx] = {image};
+        m_Images[idx] = {image, hashName};
     }
     else {
         idx = static_cast<uint32_t>(m_Images.size());
-        m_Images.emplace_back(image);
+        m_Images.emplace_back(image, hashName);
     }
     return idx;
 }
@@ -608,6 +636,8 @@ void LE::VulkanRHI::processDeferredFrees_Images() {
         {
             Images::destroyImage(vkCtx, m_Images[pf.index].image);
             m_Images[pf.index].image = VulkanImage{};
+            m_Images[pf.index].hashName= 0;
+
             // Invalidate old handles
             m_Images[pf.index].generation++;
             // Clear descriptor (recommended)
@@ -623,7 +653,7 @@ void LE::VulkanRHI::processDeferredFrees_Images() {
     }
 }
 
-// Buffer handling section
+//Start Region
 
 LE::BufferHandle LE::VulkanRHI::bindBuffer(const VulkanBuffer &buf) {
     uint32_t idx = allocBufferIndex(buf);

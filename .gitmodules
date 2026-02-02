@@ -13,3 +13,15 @@
 [submodule "LuminaEngine/external/mINI"]
 	path = LuminaEngine/external/mINI
 	url = https://github.com/FaithKamaraju/mINI.git
+[submodule "LuminaEngine/external/enkiTS"]
+	path = LuminaEngine/external/enkiTS
+	url = https://github.com/FaithKamaraju/enkiTS.git
+[submodule "LuminaEngine/external/shaderc"]
+	path = LuminaEngine/external/shaderc
+	url = https://github.com/FaithKamaraju/shaderc.git
+[submodule "LuminaEngine/external/fastgltf"]
+	path = LuminaEngine/external/fastgltf
+	url = https://github.com/FaithKamaraju/fastgltf.git
+[submodule "LuminaEngine/external/cereal"]
+	path = LuminaEngine/external/cereal
+	url = https://github.com/FaithKamaraju/cereal.git

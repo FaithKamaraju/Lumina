@@ -12,6 +12,7 @@ namespace LE {
     class Window;
     class EventManager;
     class LayerStack;
+    class ResourceManager;
 
     class Engine {
 
@@ -36,6 +37,7 @@ namespace LE {
         Window* m_IWindow;
         EventManager* m_EventManager;
         LayerStack* m_LayerStack;
+        ResourceManager* m_ResourceManager;
         Config m_Config;
         // Vulkan::RHI* m_RHIDevice;
 

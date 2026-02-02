@@ -192,71 +192,9 @@ vk::Extent2D LE::Utils::ChooseSwapExtent(GLFWwindow *window, const vk::SurfaceCa
     }
 }
 
-void LE::Utils::InitializeShadercCompiler(shaderc_optimization_level optimizationLevel,
-                                        shaderc_source_language sourceLanguage) {
 
-    g_ShaderCompiler = new shaderc::Compiler();
-    g_CompileOptions = new shaderc::CompileOptions();
-    g_CompileOptions->SetOptimizationLevel(optimizationLevel);
-    g_CompileOptions->SetSourceLanguage(sourceLanguage);
 
-}
 
-void LE::Utils::CleanupShaderc() {
-
-    delete g_ShaderCompiler;
-    delete g_CompileOptions;
-}
-
-std::vector<char> LE::Utils::ReadShaderSource(const char *filePath) {
-
-    std::ifstream file(filePath, std::ios::ate);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("failed to open file!");
-    }
-
-    size_t fileSize = (size_t) file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-
-    file.close();
-    return buffer;
-}
-
-std::vector<uint32_t> LE::Utils::CompileShader(const char* code, shaderc_shader_kind shaderKind, const char* source_name,
-            const shaderc::CompileOptions* compileOptions) {
-    InitializeShadercCompiler();
-    auto spvBinary= g_ShaderCompiler->CompileGlslToSpv(code, shaderKind,
-                                        source_name, *g_CompileOptions);
-
-    if (spvBinary.GetCompilationStatus() != shaderc_compilation_status_success) {
-        std::cerr << spvBinary.GetErrorMessage();
-        return {};
-    }
-
-    return {spvBinary.cbegin(), spvBinary.cend()};
-}
-
-std::vector<char> LE::Utils::ReadSPVFile(const std::string& filename)
-{
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("failed to open file!");
-    }
-
-    size_t fileSize = (size_t) file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-
-    file.close();
-    return buffer;
-}
 
 vk::ShaderModule LE::Utils::CreateShaderModule(vk::Device device, std::vector<uint32_t> &code) {
 
