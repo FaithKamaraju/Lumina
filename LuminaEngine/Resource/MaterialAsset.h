@@ -4,23 +4,31 @@
 
 #pragma once
 #include <glm/glm.hpp>
+#include "Rendering/Pipeline.h"
 #include "TextureAsset.h"
 
 namespace LE {
 
-    struct GLTFMetallicRoughnessMaterialAsset {
+    struct PBR_MR_MaterialInstanceHandle {
+        int32_t id = -1;
+        uint32_t generation{};
+    };
 
-        uint32_t baseColorTextureIndex;
+
+    struct PBR_MR_MaterialInstance {
+
+        TextureAssetHandle baseColorTextureAsset;
         uint32_t baseColorTextureTexCoord;
-        std::optional<uint32_t> metallicRoughnessTextureIndex;
-        std::optional<uint32_t> metallicRoughnessTextureTexCoord;
         glm::vec4 baseColorFactor = glm::vec4(1.0f);
-        float metallicFactor = 1.0f;
-        float roughnessFactor = 1.0f;
-        // std::optional<TextureAsset> normalMap;
+        TextureAssetHandle metallicRoughnessTextureAsset;
+        uint32_t metallicRoughnessTextureTexCoord;
+        float metallicFactor = 0.5f;
+        float roughnessFactor = 0.5f;
+        TextureAssetHandle normalMapTextureAsset;
+        uint32_t normalMapTextureTexCoord;
+
+        CullMode cullMode = CullMode::Back;
         // float occlusionStrength = 1.0f;
-
-
 
     };
 

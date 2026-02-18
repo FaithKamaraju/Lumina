@@ -6,10 +6,6 @@
 #include "VulkanUtils.h"
 #include "VulkanContext.h"
 
-LE::SwapChain::~SwapChain() {
-
-   destroySwapChain();
-}
 
 void LE::SwapChain::CreateSwapChain(VulkanContext* context, GLFWwindow *windowRef) {
 
@@ -100,7 +96,7 @@ void LE::SwapChain::RecreateSwapChain(GLFWwindow *windowRef) {
     for (auto imageView : m_SwapChainImageViews) {
         ctx->device.destroyImageView(imageView, nullptr);
     }
-    Images::destroyImage(*ctx, m_DepthBuffer.image);
+    Images::destroyImage(ctx, m_DepthBuffer.image);
 
     CreateSwapChain(ctx,m_WindowRef);
 
@@ -110,7 +106,7 @@ void LE::SwapChain::RecreateSwapChain(GLFWwindow *windowRef) {
 
 void LE::SwapChain::createDepthResources() {
 
-    m_DepthBuffer = Images::CreateDepthBuffer(*ctx, m_SwapChainExtent);
+    m_DepthBuffer = Images::CreateDepthBuffer(ctx, m_SwapChainExtent);
 }
 
 
@@ -119,7 +115,7 @@ void LE::SwapChain::destroySwapChain() {
     for (auto imageView : m_SwapChainImageViews) {
         ctx->device.destroyImageView(imageView, nullptr);
     }
-    Images::destroyImage(*ctx, m_DepthBuffer.image);
+    Images::destroyImage(ctx, m_DepthBuffer.image);
     ctx->device.destroySwapchainKHR(m_SwapChain, nullptr);
 
 

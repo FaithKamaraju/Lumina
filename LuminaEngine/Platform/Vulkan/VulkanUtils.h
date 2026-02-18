@@ -14,10 +14,6 @@
 
 
 
-
-
-inline constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
 struct GLFWwindow;
 
 namespace LE {
@@ -118,5 +114,6 @@ namespace LE::Utils {
 
     uint32_t FindMemoryType(vk::PhysicalDevice physicalDevice, uint32_t typeFilter, vk::MemoryPropertyFlags properties);
     vk::Format findSupportedFormat(vk::PhysicalDevice primaryPhysicalDevice, const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+
 
 }

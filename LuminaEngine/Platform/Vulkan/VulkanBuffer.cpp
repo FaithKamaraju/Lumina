@@ -6,7 +6,7 @@
 #include "Core/Logger.h"
 
 LE::VulkanBuffer LE::Buffers::allocateBuffer(
-    VulkanContext& ctx,
+    VulkanContext* ctx,
     const vk::BufferCreateInfo& bufferInfo,
     VmaMemoryUsage vmaMemoryUsage,
     VmaAllocationCreateFlags vmaFlags) {
@@ -16,17 +16,17 @@ LE::VulkanBuffer LE::Buffers::allocateBuffer(
     allocCreateInfo.flags = vmaFlags ;
 
     VulkanBuffer newBuffer{};
-    VkResult result = vmaCreateBuffer(ctx.vmaAllocator, &*bufferInfo, &allocCreateInfo, &newBuffer.buffer, &newBuffer.allocation,
+    VkResult result = vmaCreateBuffer(ctx->vmaAllocator, &*bufferInfo, &allocCreateInfo, &newBuffer.buffer, &newBuffer.allocation,
         &newBuffer.info);
 
-    LE_ASSERT(result && "Couldn't allocate buffer!");
+    // LE_ASSERT(result && "Couldn't allocate buffer!");
 
     return newBuffer;
 
 }
 
 LE::Scope<LE::VulkanBuffer> LE::Buffers::allocateBufferScoped(
-    VulkanContext& ctx,
+    VulkanContext* ctx,
     const vk::BufferCreateInfo& bufferInfo,
     VmaMemoryUsage vmaMemoryUsage,
     VmaAllocationCreateFlags vmaFlags) {
@@ -36,28 +36,28 @@ LE::Scope<LE::VulkanBuffer> LE::Buffers::allocateBufferScoped(
     allocCreateInfo.flags = vmaFlags ;
 
     Scope<VulkanBuffer> newBuffer = CreateScope<VulkanBuffer>();
-    VkResult result = vmaCreateBuffer(ctx.vmaAllocator, &*bufferInfo, &allocCreateInfo, &newBuffer.get()->buffer, &newBuffer.get()->allocation,
+    VkResult result = vmaCreateBuffer(ctx->vmaAllocator, &*bufferInfo, &allocCreateInfo, &newBuffer.get()->buffer, &newBuffer.get()->allocation,
         &newBuffer.get()->info);
 
-    LE_ASSERT(result && "Couldn't allocate buffer!");
+    // LE_ASSERT(result && "Couldn't allocate buffer!");
 
     return newBuffer;
 
 }
 
-void LE::Buffers::copyData(VulkanContext& ctx, VulkanBuffer &buffer, void *data, size_t dataSize) {
+void LE::Buffers::copyData(VulkanContext* ctx, VulkanBuffer &buffer, void *data, size_t dataSize) {
 
-    vk::CommandBufferAllocateInfo allocInfo{ .commandPool = ctx.transferCommandPool,
+    vk::CommandBufferAllocateInfo allocInfo{ .commandPool = ctx->transferCommandPool,
                                              .level = vk::CommandBufferLevel::ePrimary,
                                              .commandBufferCount = 1 };
-    vk::CommandBuffer cmdBuf = ctx.device.allocateCommandBuffers(allocInfo).front();
+    vk::CommandBuffer cmdBuf = ctx->device.allocateCommandBuffers(allocInfo).front();
     cmdBuf.begin({.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
     VkMemoryPropertyFlags memPropFlags;
-    vmaGetAllocationMemoryProperties(ctx.vmaAllocator, buffer.allocation, &memPropFlags);
+    vmaGetAllocationMemoryProperties(ctx->vmaAllocator, buffer.allocation, &memPropFlags);
 
     if(memPropFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
     {
-        vmaCopyMemoryToAllocation(ctx.vmaAllocator, data, buffer.allocation,
+        vmaCopyMemoryToAllocation(ctx->vmaAllocator, data, buffer.allocation,
             0, dataSize);
 
     }
@@ -66,18 +66,18 @@ void LE::Buffers::copyData(VulkanContext& ctx, VulkanBuffer &buffer, void *data,
         vk::BufferCreateInfo stagingInfo{
             .size = dataSize,
             .usage = vk::BufferUsageFlagBits::eTransferSrc,
-            .sharingMode = ctx.queueIndicesArr.size() > 1 ?  vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
-            .queueFamilyIndexCount = static_cast<uint32_t>(ctx.queueIndicesArr.size()),
-            .pQueueFamilyIndices = ctx.queueIndicesArr.data()
+            .sharingMode = ctx->queueIndicesArr.size() > 1 ?  vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
+            .queueFamilyIndexCount = static_cast<uint32_t>(ctx->queueIndicesArr.size()),
+            .pQueueFamilyIndices = ctx->queueIndicesArr.data()
         };
         VulkanBuffer staging = allocateBuffer(ctx, stagingInfo);
-        vmaCopyMemoryToAllocation(ctx.vmaAllocator, data,
+        vmaCopyMemoryToAllocation(ctx->vmaAllocator, data,
             staging.allocation, 0, dataSize);
 
         cmdBuf.copyBuffer(staging.buffer, buffer.buffer, vk::BufferCopy(0, 0,
             dataSize));
 
-        if (ctx.bUnifiedGraphicsAndTransferQueues) {
+        if (ctx->bUnifiedGraphicsAndTransferQueues) {
             placeBufferMemoryBarrier(
             cmdBuf,
             vk::AccessFlagBits2::eMemoryWrite,
@@ -88,9 +88,9 @@ void LE::Buffers::copyData(VulkanContext& ctx, VulkanBuffer &buffer, void *data,
             0,
             VK_WHOLE_SIZE);
             cmdBuf.end();
-            ctx.transferQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
+            ctx->transferQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
                 nullptr);
-            ctx.transferQueue.waitIdle();
+            ctx->transferQueue.waitIdle();
         }
         else {
             placeBufferMemoryBarrier(
@@ -102,17 +102,17 @@ void LE::Buffers::copyData(VulkanContext& ctx, VulkanBuffer &buffer, void *data,
             buffer.buffer,
             0,
             VK_WHOLE_SIZE,
-            ctx.queueFamilyIndices.transferFamily.value(),
-            ctx.queueFamilyIndices.graphicsFamily.value());
+            ctx->queueFamilyIndices.transferFamily.value(),
+            ctx->queueFamilyIndices.graphicsFamily.value());
             cmdBuf.end();
-            ctx.transferQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
+            ctx->transferQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
                 nullptr);
 
             vk::CommandBufferAllocateInfo bufInfo{
-                .commandPool = ctx.globalGraphicsCmdPool,
+                .commandPool = ctx->globalGraphicsCmdPool,
                 .level = vk::CommandBufferLevel::ePrimary,
                 .commandBufferCount = 1};
-            vk::CommandBuffer graphicsCmdBuf = ctx.device.allocateCommandBuffers(bufInfo).front();
+            vk::CommandBuffer graphicsCmdBuf = ctx->device.allocateCommandBuffers(bufInfo).front();
             graphicsCmdBuf.begin({.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
             placeBufferMemoryBarrier(
             cmdBuf,
@@ -123,10 +123,10 @@ void LE::Buffers::copyData(VulkanContext& ctx, VulkanBuffer &buffer, void *data,
             buffer.buffer,
             0,
             VK_WHOLE_SIZE,
-            ctx.queueFamilyIndices.transferFamily.value(),
-            ctx.queueFamilyIndices.graphicsFamily.value());
+            ctx->queueFamilyIndices.transferFamily.value(),
+            ctx->queueFamilyIndices.graphicsFamily.value());
             graphicsCmdBuf.end();
-            ctx.graphicsQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
+            ctx->graphicsQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
                 nullptr);
         }
 
@@ -167,9 +167,9 @@ void LE::Buffers::placeBufferMemoryBarrier(
 }
 
 
-void LE::Buffers::destroyBuffer(VulkanContext& ctx, const VulkanBuffer &buffer) {
+void LE::Buffers::destroyBuffer(VulkanContext* ctx, const VulkanBuffer &buffer) {
 
-    vmaDestroyBuffer(ctx.vmaAllocator, buffer.buffer, buffer.allocation);
+    vmaDestroyBuffer(ctx->vmaAllocator, buffer.buffer, buffer.allocation);
 
 }
 

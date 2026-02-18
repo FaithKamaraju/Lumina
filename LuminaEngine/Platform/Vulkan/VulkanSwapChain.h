@@ -12,7 +12,7 @@ namespace LE {
 
     struct SwapChain {
 
-        ~SwapChain();
+        ~SwapChain() = default;
         SwapChain() = default;
         void CreateSwapChain(VulkanContext* context, GLFWwindow *windowRef);
         void RecreateSwapChain(GLFWwindow *windowRef);

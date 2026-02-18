@@ -9,15 +9,13 @@
 
 namespace LE {
 
-    struct SerializableImage {
-        ImageFormat format;
-        ImageExtent3D extent;
-        std::vector<uint8_t> pixeldata;
-        // std::vector<TextureMip> mips;
+    struct TextureAssetHandle {
+        int32_t id = -1;
+        uint32_t generation{};
     };
 
     struct TextureAsset {
         ImageHandle imgHandle{};
-        SamplerHandle samplerHandle;
+        SamplerHandle samplerHandle{};
     };
 }

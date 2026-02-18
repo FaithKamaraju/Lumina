@@ -1,8 +1,8 @@
 cmake-build-debug
 cmake-build-release
-Binaries
+SampleProject/Binaries
 Resources/Models
-Assets
+SampleProject/Content/Assets
 
 .idea
 Resources/.DS_Store

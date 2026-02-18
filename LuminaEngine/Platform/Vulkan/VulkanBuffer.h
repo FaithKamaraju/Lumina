@@ -16,6 +16,7 @@ namespace LE {
         VkBuffer buffer = VK_NULL_HANDLE;
         VmaAllocation allocation = VK_NULL_HANDLE;
         VmaAllocationInfo info{};
+        VkDeviceAddress bufAddress{};
     };
 
     inline vk::BufferUsageFlags ToVkBufferUsageFlags(BufferUsageFlags flag) {
@@ -40,19 +41,19 @@ namespace LE {
 
     namespace Buffers {
 
-        VulkanBuffer allocateBuffer(VulkanContext& ctx,
+        VulkanBuffer allocateBuffer(VulkanContext* ctx,
             const vk::BufferCreateInfo& bufferInfo,
             VmaMemoryUsage vmaMemoryUsage = VMA_MEMORY_USAGE_AUTO,
             VmaAllocationCreateFlags vmaFlags = VMA_ALLOCATION_CREATE_MAPPED_BIT |
                                             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
                                             VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT);
-        Scope<VulkanBuffer> allocateBufferScoped(VulkanContext& ctx,
+        Scope<VulkanBuffer> allocateBufferScoped(VulkanContext* ctx,
             const vk::BufferCreateInfo& bufferInfo,
             VmaMemoryUsage vmaMemoryUsage = VMA_MEMORY_USAGE_AUTO,
             VmaAllocationCreateFlags vmaFlags = VMA_ALLOCATION_CREATE_MAPPED_BIT |
                                             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
                                             VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT);
-        void copyData(VulkanContext& ctx, VulkanBuffer& buffer, void* data, size_t dataSize);
+        void copyData(VulkanContext* ctx, VulkanBuffer& buffer, void* data, size_t dataSize);
         void placeBufferMemoryBarrier(
                     vk::CommandBuffer& cmdbuf,
                     vk::AccessFlags2 srcAccessMask,
@@ -64,7 +65,7 @@ namespace LE {
                     vk::DeviceSize size,
                     uint32_t srcQueueIndex = VK_QUEUE_FAMILY_IGNORED,
                     uint32_t dstQueueIndex = VK_QUEUE_FAMILY_IGNORED);
-        void destroyBuffer(VulkanContext& ctx, const VulkanBuffer& buffer);
+        void destroyBuffer(VulkanContext* ctx, const VulkanBuffer& buffer);
 
 
 

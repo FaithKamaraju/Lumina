@@ -10,24 +10,12 @@ namespace LE {
     struct ImageExtent2D {
         uint32_t    width;
         uint32_t    height;
-
-        template<class Archive>
-        void serialize(Archive& archive) {
-            archive(width, height);
-
-        }
     };
 
     struct ImageExtent3D {
         uint32_t    width;
         uint32_t    height;
         uint32_t    depth;
-
-        template<class Archive>
-        void serialize(Archive& archive) {
-            archive(width, height, depth);
-
-        }
     };
 
     enum class ImageFormat
@@ -128,7 +116,7 @@ namespace LE {
     }
 
     struct ImageHandle {
-        uint32_t id{};
+        int32_t id = -1;
         uint32_t generation{};
     };
 

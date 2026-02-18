@@ -127,20 +127,20 @@ namespace LE {
 
     namespace Images {
         VulkanImage allocateImage(
-            VulkanContext& ctx,
+            VulkanContext* ctx,
             const vk::ImageCreateInfo& imageInfo,
             VmaMemoryUsage vmaMemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY,
             VmaAllocationCreateFlags vmaFlags = VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
         Scope<VulkanImage> allocateImageScoped(
-            VulkanContext& ctx,
+            VulkanContext* ctx,
             const vk::ImageCreateInfo& imageInfo,
             VmaMemoryUsage vmaMemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY,
             VmaAllocationCreateFlags vmaFlags = VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
-        void copyData(VulkanContext& ctx, VulkanImage& image, void* data, size_t dataSize);
-        void createImageView(VulkanContext& ctx, VulkanImage& image, vk::ImageAspectFlags imageAspectMask);
-        void destroyImage(VulkanContext& ctx, VulkanImage& image);
+        void copyData(VulkanContext* ctx, VulkanImage& image, void* data, size_t dataSize);
+        void createImageView(VulkanContext* ctx, VulkanImage& image, vk::ImageAspectFlags imageAspectMask);
+        void destroyImage(VulkanContext* ctx, VulkanImage& image);
         void transitionImageLayout(
                 vk::CommandBuffer buffer,
                 vk::Image image,
@@ -150,12 +150,13 @@ namespace LE {
                 vk::AccessFlags2 dstAccessMask,
                 vk::PipelineStageFlags2 srcStageMask,
                 vk::PipelineStageFlags2 dstStageMask,
+                vk::ImageAspectFlags aspectMask,
                 uint32_t srcQueueIndex = VK_QUEUE_FAMILY_IGNORED,
                 uint32_t dstQueueIndex = VK_QUEUE_FAMILY_IGNORED);
 
 
-        DepthImage CreateDepthBuffer(VulkanContext& ctx, vk::Extent2D swapChainExtent);
-        vk::Format findSuitableDepthFormat(VulkanContext& ctx);
+        DepthImage CreateDepthBuffer(VulkanContext* ctx, vk::Extent2D swapChainExtent);
+        vk::Format findSuitableDepthFormat(VulkanContext* ctx);
 
     }
 

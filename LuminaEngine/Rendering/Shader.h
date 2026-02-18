@@ -15,20 +15,20 @@ namespace LE {
         Geometry               ,
         Fragment               ,
         Compute                ,
-        AllGraphics            ,
         Mesh                   ,
     };
 
 
     struct ShaderHandle {
-        uint32_t id{};
+        int32_t id{};
         uint32_t generation{};
+
+        bool operator==(const ShaderHandle& a) const {
+            return std::tie(id, generation) ==
+                std::tie(a.id, a.generation);
+        }
     };
 
-    struct ShaderStageDesc {
-        ShaderStage stage{};
-        ShaderHandle handle{};
-    };
 
 
 }

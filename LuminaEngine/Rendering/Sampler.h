@@ -4,6 +4,7 @@
 
 #pragma once
 #include <cereal/cereal.hpp>
+#include "Core/UtilFunctions.h"
 
 namespace LE {
 
@@ -41,9 +42,7 @@ namespace LE {
         Always
       };
 
-    inline void HashCombine(size_t& seed, size_t value) {
-        seed ^= value + 0x9e3779b97f4a7c15ull + (seed << 6) + (seed >> 2);
-    }
+
 
     struct SamplerKey {
 
@@ -97,13 +96,15 @@ namespace LE {
             return this->hashID != a.hashID;
         }
 
-
-
     };
     
 
     struct SamplerHandle {
-        uint32_t id{};
+        int32_t id = -1;
         uint32_t generation{};
+
+        bool operator<(const SamplerHandle& other) const {
+            return std::tie(id, generation) < std::tie(other.id, other.generation);
+        }
     };
 }

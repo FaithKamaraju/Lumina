@@ -4,15 +4,16 @@
 
 #pragma once
 #include "mini/ini.h"
+#include "LE_Types.h"
 
 namespace LE {
 
     struct WindowConfig {
         int width = 1280;
         int height = 720;
-        std::string title = "Lumina Game";
         bool vsync = true;
         bool fullscreen = false;
+        std::string title = "Lumina Game";
 
         WindowConfig() = default;
         explicit WindowConfig(mINI::INIStructure& ini) {
@@ -22,7 +23,7 @@ namespace LE {
             vsync = std::stoi(ini["WindowSettings"]["enableVsync"]) > 0;
             fullscreen = std::stoi(ini["WindowSettings"]["fullscreen"]) > 0;
         }
-        void toMap(mINI::INIStructure& ini) {
+        void toMap(mINI::INIStructure& ini) const {
             ini["WindowSettings"]["width"] = std::to_string(width);
             ini["WindowSettings"]["height"] = std::to_string(height);
             ini["WindowSettings"]["title"] = title;
@@ -32,9 +33,26 @@ namespace LE {
 
     };
 
+    struct GraphicsConfig {
+
+        GraphicsAPI graphicsAPI = GraphicsAPI::VULKAN;
+
+        GraphicsConfig() = default;
+        explicit GraphicsConfig(mINI::INIStructure& ini) {
+            graphicsAPI = static_cast<GraphicsAPI>(std::stoi(ini["GraphicsSettings"]["graphicsAPI"]));
+
+        }
+        void toMap(mINI::INIStructure& ini) const {
+            ini["GraphicsSettings"]["graphicsAPI"] = std::to_string(static_cast<int>(graphicsAPI));
+
+        }
+
+    };
+
     struct Config {
-        bool changed = false;
         WindowConfig window_config{};
+        GraphicsConfig graphics_config{};
+        bool changed = false;
 
     };
 

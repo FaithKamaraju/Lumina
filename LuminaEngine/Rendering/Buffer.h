@@ -35,7 +35,7 @@ namespace LE {
 
 
     struct BufferHandle {
-        uint32_t id{};
+        int32_t id = -1;
         uint32_t generation{};
     };
 

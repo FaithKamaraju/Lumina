@@ -5,6 +5,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <glm/detail/type_quat.hpp>
+#include "Resource/MeshAsset.h"
 
 constexpr int MAX_NODE_LEVEL = 16;
 
@@ -20,7 +21,7 @@ namespace LE {
     };
 
     struct SceneNode {
-        uint32_t meshIndex{};
+        MeshAssetHandle meshHandle{};
         glm::mat4 localTransform{1.f};
         glm::mat4 globalTransform{1.f};
         Hierarchy hierarchy{};

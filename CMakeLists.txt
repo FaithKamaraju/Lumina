@@ -4,11 +4,11 @@ project(Lumina)
 set(CMAKE_CXX_STANDARD 20)
 
 # Set the output directory for all runtime targets (executables/DLLs)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Binaries/$<CONFIG>/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SampleProject/Binaries/$<CONFIG>/bin)
 
 # Optionally, set output directories for static and shared libraries
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Binaries/$<CONFIG>/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Binaries/$<CONFIG>/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SampleProject/Binaries/$<CONFIG>/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SampleProject/Binaries/$<CONFIG>/lib)
 
 
 set(CMAKE_THREAD_LIBS_INIT "-lpthread")

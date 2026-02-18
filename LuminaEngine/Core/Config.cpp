@@ -35,9 +35,11 @@ void LE::SaveConfig(const char *path, Config& config) {
 void LE::convertMapToStruct(Config& config, mINI::INIStructure& ini) {
 
     config.window_config = WindowConfig{ini};
+    config.graphics_config = GraphicsConfig{ini};
 }
 
 void LE::convertStructToMap(mINI::INIStructure &ini, Config &config) {
 
     config.window_config.toMap(ini);
+    config.graphics_config.toMap(ini);
 }

@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include <type_traits>
 
 using LEBool = bool;
 
@@ -10,6 +11,14 @@ constexpr LEBool LE_SUCCESS = true;
 constexpr LEBool LE_FAILURE = false;
 
 namespace LE {
+
+    enum class GraphicsAPI : int {
+        VULKAN = 0,
+        D3D12 = 1,
+        METAL = 2
+    };
+
+
 
     template<typename T>
     using Scope = std::unique_ptr<T>;

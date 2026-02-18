@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 4.0)
 project(LuminaEngine C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 17)
 
 if(MVSC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /EHsc")
@@ -13,13 +13,14 @@ endif(MVSC)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(LE_PLATFORM "LE_PLATFORM_WIN")
-
-    #    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
 endif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(LE_PLATFORM "LE_PLATFORM_LINUX")
+endif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(LE_PLATFORM "LE_PLATFORM_MAC")
-    #    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
 endif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 
 set(SHADERC_ENABLE_SHARED_CRT ON)
@@ -45,9 +46,13 @@ target_compile_definitions(VulkanCppModule
         VULKAN_HPP_NO_STRUCT_CONSTRUCTORS=1
         VULKAN_HPP_NO_SPACESHIP_OPERATOR=1
         VK_ENABLE_BETA_EXTENSIONS=1
+        XXH_NO_EXTERNC_GUARD=1
 )
 
 add_library(${PROJECT_NAME} STATIC
+
+        #xxHash files
+        external/xxHash/xxhash.c
 
         # enkiTS files
         external/enkiTS/src/TaskScheduler.cpp
@@ -125,14 +130,26 @@ add_library(${PROJECT_NAME} STATIC
         Rendering/Shader.h
         Resource/LoadedGLTF.h
         Resource/MeshAsset.h
-        Resource/Scene.h
+        Scene/Scene.h
         Resource/MaterialAsset.h
         Resource/TextureAsset.h
         Core/MathUtils.h
         Core/CerealUtils.h
-        Rendering/Scenegraph.cpp
-        Rendering/Scenegraph.h
+        Scene/Scenegraph.cpp
+        Scene/Scenegraph.h
+        Core/DirectoryPathnames.h
+        Resource/AssetRegistry.cpp
+        Resource/AssetRegistry.h
+        Core/UtilFunctions.h
+        Platform/Vulkan/PerRenderableConstants.h
+        Rendering/SceneData.h
+        Rendering/GPUMaterialData.h
+        Rendering/RHI.cpp
+        Cameras/DefaultFlyCamera.cpp
+        Cameras/DefaultFlyCamera.h
 )
+
+set_source_files_properties(external/xxHash/xxhash.c PROPERTIES LANGUAGE CXX)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw glm spdlog Vulkan::cppm shaderc_combined fastgltf )
 
@@ -149,7 +166,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC external/spdlog/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC external/mINI/src/)
 target_include_directories(${PROJECT_NAME} PUBLIC external/stbImage/)
 target_include_directories(${PROJECT_NAME} PRIVATE external/enkiTS/src/)
-target_include_directories(${PROJECT_NAME} PRIVATE external/cereal/include/)
+target_include_directories(${PROJECT_NAME} PRIVATE external/xxHash/)
+target_include_directories(${PROJECT_NAME} PUBLIC external/cereal/include/)
 target_include_directories(${PROJECT_NAME} PRIVATE external/vma/include/)
 target_include_directories(${PROJECT_NAME} PRIVATE external/vma/src/)
 target_include_directories(${PROJECT_NAME} PRIVATE external/shaderc/libshaderc/include/)

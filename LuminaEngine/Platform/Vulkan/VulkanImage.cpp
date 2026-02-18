@@ -9,7 +9,7 @@
 #include "Core/Logger.h"
 
 
-LE::VulkanImage LE::Images::allocateImage(VulkanContext& ctx, const vk::ImageCreateInfo &imageInfo,
+LE::VulkanImage LE::Images::allocateImage(VulkanContext* ctx, const vk::ImageCreateInfo &imageInfo,
     VmaMemoryUsage vmaMemoryUsage, VmaAllocationCreateFlags vmaFlags) {
 
     VmaAllocationCreateInfo allocCreateInfo = {};
@@ -17,10 +17,10 @@ LE::VulkanImage LE::Images::allocateImage(VulkanContext& ctx, const vk::ImageCre
     allocCreateInfo.flags = vmaFlags;
 
     VulkanImage newImage{};
-    VkResult result = vmaCreateImage(ctx.vmaAllocator, &*imageInfo, &allocCreateInfo, &newImage.image, &newImage.allocation,
+    VkResult result = vmaCreateImage(ctx->vmaAllocator, &*imageInfo, &allocCreateInfo, &newImage.image, &newImage.allocation,
         &newImage.info);
 
-    LE_ASSERT(result && "Couldn't allocate Image!");
+    // LE_ASSERT(result && "Couldn't allocate Image!");
 
     newImage.extent = imageInfo.extent;
     newImage.format = imageInfo.format;
@@ -28,7 +28,7 @@ LE::VulkanImage LE::Images::allocateImage(VulkanContext& ctx, const vk::ImageCre
     return newImage;
 }
 
-LE::Scope<LE::VulkanImage> LE::Images::allocateImageScoped(VulkanContext& ctx, const vk::ImageCreateInfo &imageInfo,
+LE::Scope<LE::VulkanImage> LE::Images::allocateImageScoped(VulkanContext* ctx, const vk::ImageCreateInfo &imageInfo,
     VmaMemoryUsage vmaMemoryUsage, VmaAllocationCreateFlags vmaFlags) {
 
     VmaAllocationCreateInfo allocCreateInfo = {};
@@ -36,7 +36,7 @@ LE::Scope<LE::VulkanImage> LE::Images::allocateImageScoped(VulkanContext& ctx, c
     allocCreateInfo.flags = vmaFlags;
 
     Scope<VulkanImage> newImage = CreateScope<VulkanImage>();
-    VkResult result = vmaCreateImage(ctx.vmaAllocator, &*imageInfo, &allocCreateInfo, &newImage.get()->image, &newImage.get()->allocation,
+    VkResult result = vmaCreateImage(ctx->vmaAllocator, &*imageInfo, &allocCreateInfo, &newImage.get()->image, &newImage.get()->allocation,
         &newImage.get()->info);
 
     LE_ASSERT(result && "Couldn't allocate Image!");
@@ -48,7 +48,7 @@ LE::Scope<LE::VulkanImage> LE::Images::allocateImageScoped(VulkanContext& ctx, c
 }
 
 
-void LE::Images::createImageView(VulkanContext& ctx, VulkanImage &image,vk::ImageAspectFlags imageAspectMask) {
+void LE::Images::createImageView(VulkanContext* ctx, VulkanImage &image,vk::ImageAspectFlags imageAspectMask) {
 
     vk::ImageViewCreateInfo createInfo{
             .image = image.image,
@@ -68,13 +68,13 @@ void LE::Images::createImageView(VulkanContext& ctx, VulkanImage &image,vk::Imag
                 .layerCount = 1,
                 }
         };
-        image.imageView = ctx.device.createImageView(createInfo, nullptr);
+        image.imageView = ctx->device.createImageView(createInfo, nullptr);
 }
 
-void LE::Images::destroyImage(VulkanContext& ctx, VulkanImage &image) {
+void LE::Images::destroyImage(VulkanContext* ctx, VulkanImage &image) {
 
-    ctx.device.destroyImageView(image.imageView);
-    vmaDestroyImage(ctx.vmaAllocator, image.image, image.allocation);
+    ctx->device.destroyImageView(image.imageView);
+    vmaDestroyImage(ctx->vmaAllocator, image.image, image.allocation);
 }
 
 void LE::Images::transitionImageLayout(
@@ -86,6 +86,7 @@ void LE::Images::transitionImageLayout(
         vk::AccessFlags2 dstAccessMask,
         vk::PipelineStageFlags2 srcStageMask,
         vk::PipelineStageFlags2 dstStageMask,
+        vk::ImageAspectFlags aspectMask,
         uint32_t srcQueueIndex,
         uint32_t dstQueueIndex)
 {
@@ -100,7 +101,7 @@ void LE::Images::transitionImageLayout(
         .dstQueueFamilyIndex = dstQueueIndex,
         .image = image,
         .subresourceRange = {
-            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .aspectMask = aspectMask,
             .baseMipLevel = 0,
             .levelCount = 1,
             .baseArrayLayer = 0,
@@ -115,25 +116,25 @@ void LE::Images::transitionImageLayout(
     buffer.pipelineBarrier2(dependencyInfo);
 }
 
-void LE::Images::copyData(VulkanContext& ctx, VulkanImage &image, void *data, size_t dataSize) {
+void LE::Images::copyData(VulkanContext* ctx, VulkanImage &image, void *data, size_t dataSize) {
 
-    vk::CommandBufferAllocateInfo allocInfo{ .commandPool = ctx.transferCommandPool,
+    vk::CommandBufferAllocateInfo allocInfo{ .commandPool = ctx->transferCommandPool,
                                              .level = vk::CommandBufferLevel::ePrimary,
                                              .commandBufferCount = 1 };
-    vk::CommandBuffer cmdBuf = ctx.device.allocateCommandBuffers(allocInfo).front();
+    vk::CommandBuffer cmdBuf = ctx->device.allocateCommandBuffers(allocInfo).front();
     cmdBuf.begin({.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
     VkMemoryPropertyFlags memPropFlags;
-    vmaGetAllocationMemoryProperties(ctx.vmaAllocator, image.allocation, &memPropFlags);
+    vmaGetAllocationMemoryProperties(ctx->vmaAllocator, image.allocation, &memPropFlags);
 
     vk::BufferCreateInfo stagingInfo{
         .size = dataSize,
         .usage = vk::BufferUsageFlagBits::eTransferSrc,
-        .sharingMode = ctx.queueIndicesArr.size() > 1 ?  vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
-        .queueFamilyIndexCount = static_cast<uint32_t>(ctx.queueIndicesArr.size()),
-        .pQueueFamilyIndices = ctx.queueIndicesArr.data()
+        .sharingMode = ctx->queueIndicesArr.size() > 1 ?  vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
+        .queueFamilyIndexCount = static_cast<uint32_t>(ctx->queueIndicesArr.size()),
+        .pQueueFamilyIndices = ctx->queueIndicesArr.data()
     };
     VulkanBuffer staging = Buffers::allocateBuffer(ctx, stagingInfo);
-    vmaCopyMemoryToAllocation(ctx.vmaAllocator, data,
+    vmaCopyMemoryToAllocation(ctx->vmaAllocator, data,
         staging.allocation, 0, dataSize);
 
     transitionImageLayout(
@@ -144,7 +145,8 @@ void LE::Images::copyData(VulkanContext& ctx, VulkanImage &image, void *data, si
         {},
         vk::AccessFlagBits2::eMemoryWrite,
         {},
-        vk::PipelineStageFlagBits2::eTransfer
+        vk::PipelineStageFlagBits2::eTransfer,
+        vk::ImageAspectFlagBits::eColor
         );
 
     vk::BufferImageCopy region{};
@@ -160,7 +162,7 @@ void LE::Images::copyData(VulkanContext& ctx, VulkanImage &image, void *data, si
 
     cmdBuf.copyBufferToImage(staging.buffer, image.image,vk::ImageLayout::eTransferDstOptimal, {region});
 
-    if (ctx.bUnifiedGraphicsAndTransferQueues) {
+    if (ctx->bUnifiedGraphicsAndTransferQueues) {
         transitionImageLayout(
         cmdBuf,
         image.image,
@@ -169,12 +171,13 @@ void LE::Images::copyData(VulkanContext& ctx, VulkanImage &image, void *data, si
         vk::AccessFlagBits2::eTransferWrite,
         vk::AccessFlagBits2::eShaderRead,
         vk::PipelineStageFlagBits2::eTransfer,
-        vk::PipelineStageFlagBits2::eFragmentShader
+        vk::PipelineStageFlagBits2::eFragmentShader,
+        vk::ImageAspectFlagBits::eColor
         );
         cmdBuf.end();
-        ctx.transferQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
+        ctx->transferQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
             nullptr);
-        ctx.transferQueue.waitIdle();
+        ctx->transferQueue.waitIdle();
         Buffers::destroyBuffer(ctx, staging);
     }
     else {
@@ -187,18 +190,19 @@ void LE::Images::copyData(VulkanContext& ctx, VulkanImage &image, void *data, si
         {},
         vk::PipelineStageFlagBits2::eTransfer,
         {},
-        ctx.queueFamilyIndices.transferFamily.value(),
-        ctx.queueFamilyIndices.graphicsFamily.value()
+        vk::ImageAspectFlagBits::eColor,
+        ctx->queueFamilyIndices.transferFamily.value(),
+        ctx->queueFamilyIndices.graphicsFamily.value()
         );
         cmdBuf.end();
-        ctx.transferQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
+        ctx->transferQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
             nullptr);
 
         vk::CommandBufferAllocateInfo bufInfo{
-            .commandPool = ctx.globalGraphicsCmdPool,
+            .commandPool = ctx->globalGraphicsCmdPool,
             .level = vk::CommandBufferLevel::ePrimary,
             .commandBufferCount = 1};
-        vk::CommandBuffer graphicsCmdBuf = ctx.device.allocateCommandBuffers(bufInfo).front();
+        vk::CommandBuffer graphicsCmdBuf = ctx->device.allocateCommandBuffers(bufInfo).front();
         graphicsCmdBuf.begin({.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
         transitionImageLayout(
                 graphicsCmdBuf,
@@ -209,11 +213,12 @@ void LE::Images::copyData(VulkanContext& ctx, VulkanImage &image, void *data, si
                 vk::AccessFlagBits2::eShaderRead,
                 {},
                 vk::PipelineStageFlagBits2::eFragmentShader,
-                ctx.queueFamilyIndices.transferFamily.value(),
-                ctx.queueFamilyIndices.graphicsFamily.value()
+                vk::ImageAspectFlagBits::eColor,
+                ctx->queueFamilyIndices.transferFamily.value(),
+                ctx->queueFamilyIndices.graphicsFamily.value()
                 );
         graphicsCmdBuf.end();
-        ctx.graphicsQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
+        ctx->graphicsQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &cmdBuf },
             nullptr);
 
 
@@ -223,15 +228,15 @@ void LE::Images::copyData(VulkanContext& ctx, VulkanImage &image, void *data, si
 
 }
 
-vk::Format LE::Images::findSuitableDepthFormat(VulkanContext& ctx) {
-    return Utils::findSupportedFormat(ctx.primaryPhysicalDevice,
+vk::Format LE::Images::findSuitableDepthFormat(VulkanContext* ctx) {
+    return Utils::findSupportedFormat(ctx->primaryPhysicalDevice,
     {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
         vk::ImageTiling::eOptimal,
         vk::FormatFeatureFlagBits::eDepthStencilAttachment
     );
 }
 
-LE::DepthImage LE::Images::CreateDepthBuffer(VulkanContext& ctx, vk::Extent2D swapChainExtent) {
+LE::DepthImage LE::Images::CreateDepthBuffer(VulkanContext* ctx, vk::Extent2D swapChainExtent) {
 
     DepthImage depthImg{};
     vk::Format depthImageFormat = findSuitableDepthFormat(ctx);
@@ -249,8 +254,8 @@ LE::DepthImage LE::Images::CreateDepthBuffer(VulkanContext& ctx, vk::Extent2D sw
     depthImageInfo.samples = vk::SampleCountFlagBits::e1;
     depthImageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
     depthImageInfo.sharingMode = vk::SharingMode::eExclusive;
-    depthImageInfo.queueFamilyIndexCount = static_cast<uint32_t>(ctx.queueIndicesArr.size());
-    depthImageInfo.pQueueFamilyIndices = ctx.queueIndicesArr.data();
+    depthImageInfo.queueFamilyIndexCount = static_cast<uint32_t>(ctx->queueIndicesArr.size());
+    depthImageInfo.pQueueFamilyIndices = ctx->queueIndicesArr.data();
 
     depthImg.image = allocateImage(ctx, depthImageInfo, VMA_MEMORY_USAGE_GPU_ONLY, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT);
 
