@@ -180,7 +180,7 @@ namespace LE {
         // ImguiVulkan* m_ImguiVulkanImpl = nullptr;
         VulkanContext* vkCtx = nullptr;
         SwapChain* swapChain = nullptr;
-        uint8_t currentFrame = 0;
+        uint32_t currentFrame = 0;
         std::array<FrameData, MAX_FRAMES_IN_FLIGHT> perFrameData;
         std::array<vk::Semaphore, 3> submitSemaphores{nullptr, nullptr, nullptr};
 

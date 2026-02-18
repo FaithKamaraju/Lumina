@@ -775,9 +775,7 @@ void LE::VulkanRHI::recreateSwapChainAndPerFrameData(GLFWwindow *windowRef) {
     vkCtx->device.waitIdle();
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkCtx->device.destroySemaphore(perFrameData[i].acquireSemaphore, nullptr);
-        vkCtx->device.destroyFence(perFrameData[i].inFlightFence, nullptr);
-        vkCtx->device.destroyCommandPool(perFrameData[i].graphicsCommandPool, nullptr);
+        perFrameData[i].cleanup(vkCtx);
     }
     for (int i = 0; i < swapChain->m_SwapChainImageViews.size(); i++) {
         vkCtx->device.destroySemaphore(submitSemaphores[i], nullptr);
@@ -840,17 +838,6 @@ void LE::VulkanRHI::recordCommands(const std::vector<Renderable>& renderables, u
         .clearValue = clearDepthStencil
     };
 
-    // Set up the rendering info
-    vk::RenderingInfo renderingInfo = {
-        .renderArea = { .offset = { 0, 0 }, .extent = swapChain->m_SwapChainExtent },
-        .layerCount = 1,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &attachmentInfo,
-        .pDepthAttachment = &depthAttachInfo,
-    };
-
-    perFrameData[frameIndex].graphicsCommandBuffer.beginRendering(renderingInfo);
-
     vk::Viewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -864,6 +851,20 @@ void LE::VulkanRHI::recordCommands(const std::vector<Renderable>& renderables, u
     scissor.offset = {0, 0};
     scissor.extent = swapChain->m_SwapChainExtent;
     perFrameData[frameIndex].graphicsCommandBuffer.setScissor(0, scissor);
+
+    // Set up the rendering info
+    vk::RenderingInfo renderingInfo = {
+        .renderArea = { .offset = { 0, 0 },
+        .extent = swapChain->m_SwapChainExtent },
+        .layerCount = 1,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &attachmentInfo,
+        .pDepthAttachment = &depthAttachInfo,
+    };
+
+    perFrameData[frameIndex].graphicsCommandBuffer.beginRendering(renderingInfo);
+
+
 
     std::array descSets = {
         perFrameData[frameIndex].sceneDescriptorSet,
@@ -914,7 +915,7 @@ void LE::VulkanRHI::recordCommands(const std::vector<Renderable>& renderables, u
             vk::PipelineStageFlagBits2::eColorAttachmentOutput,        // srcStage
             vk::PipelineStageFlagBits2::eBottomOfPipe,                  // dstStage
             vk::ImageAspectFlagBits::eColor
-        );
+    );
 
     perFrameData[frameIndex].graphicsCommandBuffer.end();
 
@@ -1210,7 +1211,7 @@ LE::ShaderHandle LE::VulkanRHI::bindShaderModule(const vk::ShaderModule &module,
     uint32_t idx = allocShaderModuleIndex(module, hashID);
     m_ShaderModules[idx].generation++;
 
-    ShaderHandle handle{.id = static_cast<int32_t>(idx), .generation = m_Images[idx].generation};
+    ShaderHandle handle{.id = static_cast<int32_t>(idx), .generation = m_ShaderModules[idx].generation};
     return handle;
 }
 

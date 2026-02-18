@@ -41,7 +41,7 @@ LEBool LE::Engine::InitializeSubSystems() {
     m_ResourceManager = new ResourceManager(m_RHIDevice, m_AssetRegistry);
 
     // m_ResourceManager->ImportGLTFFile("../../../Content/Models/DamagedHelmet.gltf","DamagedHelmet");
-    m_ResourceManager->LoadSceneAsset("../../../Content/Assets/DamagedHelmet.LEASSET", m_Scenegraph.nodes[0]);
+    m_ResourceManager->LoadSceneAsset("../../../Content/Assets/DamagedHelmet.LEASSET", {});
     // m_LayerStack->PushLayer(new ImguiLayer());
 
 
