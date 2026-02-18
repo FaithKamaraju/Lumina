@@ -140,14 +140,16 @@ void LE::VulkanRHI::UpdateMaterialDataSSBOs(PBRMaterialGPUData data, size_t inde
 }
 
 void LE::VulkanRHI::UpdateCameraAndSceneData() {
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        CameraAndSceneData ubo{};
+        ubo.view = glm::lookAt(glm::vec3(0.0f, 0.f, 1.3f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        ubo.proj = glm::perspective(glm::radians(45.0f),
+            swapChain->m_SwapChainExtent.width / (float) swapChain->m_SwapChainExtent.height, 0.1f, 10.0f);
+        ubo.proj[1][1] *= -1;
+        // ubo.time = timestep;
+        UpdateUniformBufferData(perFrameData[i].cameraAndSceneBufferHandle, &ubo, sizeof(ubo), 0);
+    }
 
-    CameraAndSceneData ubo{};
-    ubo.view = glm::lookAt(glm::vec3(0.0f, 0.f, 1.3f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-    ubo.proj = glm::perspective(glm::radians(45.0f),
-        swapChain->m_SwapChainExtent.width / (float) swapChain->m_SwapChainExtent.height, 0.1f, 10.0f);
-    ubo.proj[1][1] *= -1;
-    // ubo.time = timestep;
-    UpdateUniformBufferData(perFrameData[currentFrame].cameraAndSceneBufferHandle, &ubo, sizeof(ubo), 0);
 }
 
 
