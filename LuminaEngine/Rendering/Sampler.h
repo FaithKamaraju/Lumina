@@ -8,20 +8,20 @@
 
 namespace LE {
 
-    enum class Filter : uint32_t
+    enum class Filter : uint8_t
     {
         Nearest = 0 ,
         Linear  ,
         CubicIMG
     };
 
-    enum class SamplerMipmapMode : uint32_t
+    enum class SamplerMipmapMode : uint8_t
     {
         Nearest,
         Linear
     };
 
-    enum class SamplerAddressMode : uint32_t
+    enum class SamplerAddressMode : uint8_t
     {
         Repeat               ,
         MirroredRepeat       ,
@@ -30,7 +30,7 @@ namespace LE {
         MirrorClampToEdge
     };
 
-    enum class CompareOp : uint32_t
+    enum class CompareOp : uint8_t
     {
         Never          ,
         Less           ,

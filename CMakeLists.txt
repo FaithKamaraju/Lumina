@@ -3,13 +3,6 @@ project(Lumina)
 
 set(CMAKE_CXX_STANDARD 20)
 
-# Set the output directory for all runtime targets (executables/DLLs)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SampleProject/Binaries/$<CONFIG>/bin)
-
-# Optionally, set output directories for static and shared libraries
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SampleProject/Binaries/$<CONFIG>/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SampleProject/Binaries/$<CONFIG>/lib)
-
 
 set(CMAKE_THREAD_LIBS_INIT "-lpthread")
 set(CMAKE_HAVE_THREADS_LIBRARY 1)
@@ -17,7 +10,24 @@ set(CMAKE_USE_WIN32_THREADS_INIT 0)
 set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
+option(LUMINA_BUILD_EDITOR "Build the editor executable" ON)
+option(LUMINA_BUILD_GAME_PROJECT "Build sample project targets" ON)
+option(LUMINA_SHIPPING "Shipping optimizations on or off" OFF)
+
+if(LUMINA_BUILD_EDITOR AND LUMINA_BUILD_GAME_PROJECT)
+    option(LUMINA_HOT_RELOAD "Enable native hot reload module loading" ON)
+else()
+    option(LUMINA_HOT_RELOAD "Enable native hot reload module loading" OFF)
+endif()
+
 add_subdirectory(LuminaEngine)
-add_subdirectory(SampleProject)
+
+if(LUMINA_BUILD_EDITOR)
+    add_subdirectory(LuminaEditor)
+endif()
+
+if(LUMINA_BUILD_GAME_PROJECT)
+    add_subdirectory(SampleProject)
+endif()
 
 

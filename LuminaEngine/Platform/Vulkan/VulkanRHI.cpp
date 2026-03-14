@@ -5,6 +5,8 @@
 #include "VulkanRHI.h"
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
 #include "Platform/Vulkan/VulkanUtils.h"
 #include "Core/Events/EventManager.h"
 #include "Core/Events/WindowEvent.h"
@@ -144,8 +146,8 @@ void LE::VulkanRHI::UpdateCameraAndSceneData() {
         CameraAndSceneData ubo{};
         ubo.view = glm::lookAt(glm::vec3(0.0f, 0.f, 1.3f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
         ubo.proj = glm::perspective(glm::radians(45.0f),
-            swapChain->m_SwapChainExtent.width / (float) swapChain->m_SwapChainExtent.height, 0.1f, 10.0f);
-        ubo.proj[1][1] *= -1;
+            swapChain->m_SwapChainExtent.width / (float) swapChain->m_SwapChainExtent.height, 0.1f, 100.0f);
+        // ubo.proj[1][1] *= -1;
         // ubo.time = timestep;
         UpdateUniformBufferData(perFrameData[i].cameraAndSceneBufferHandle, &ubo, sizeof(ubo), 0);
     }
@@ -535,8 +537,8 @@ LE::PipelineHandle LE::VulkanRHI::CreateGraphicsPipeline(const GraphicsPipelineD
         .depthClampEnable = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode = vk::PolygonMode::eFill,
-        .cullMode = vk::CullModeFlagBits::eNone,
-        // .cullMode = GetVKCullMode(desc.cullMode),
+        // .cullMode = vk::CullModeFlagBits::eNone,
+        .cullMode = GetVKCullMode(desc.cullMode),
         .frontFace = vk::FrontFace::eClockwise,
         .depthBiasEnable = VK_FALSE,
         .lineWidth = 1.0f,
@@ -670,6 +672,7 @@ void LE::VulkanRHI::ProcessDeferredFrees() {
     processDeferredFrees_Buffer();
     processDeferredFrees_Sampler();
     processDeferredFrees_ShaderModules();
+    processDeferredFrees_Pipelines();
 }
 
 
@@ -784,6 +787,8 @@ void LE::VulkanRHI::recreateSwapChainAndPerFrameData(GLFWwindow *windowRef) {
     }
 
     vkCtx->device.destroyCommandPool(vkCtx->transferCommandPool);
+    vkCtx->device.destroyCommandPool(vkCtx->globalGraphicsCmdPool);
+
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         perFrameData[i].initSyncObjects(vkCtx);
@@ -823,7 +828,7 @@ void LE::VulkanRHI::recordCommands(const std::vector<Renderable>& renderables, u
         vk::ImageAspectFlagBits::eDepth
     );
 
-    vk::ClearValue clearColor = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    vk::ClearValue clearColor = {{0.2f, 0.2f, 0.2f, 1.0f}};
     vk::ClearDepthStencilValue clearDepthStencil = {1.f, 0};
     vk::RenderingAttachmentInfo attachmentInfo = {
         .imageView = swapChain->m_SwapChainImageViews[imageIndex],
@@ -881,10 +886,11 @@ void LE::VulkanRHI::recordCommands(const std::vector<Renderable>& renderables, u
         perFrameData[frameIndex].graphicsCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_Pipelines[renderable.pipelineHandle.id].pipeline);
         perFrameData[frameIndex].graphicsCommandBuffer.bindIndexBuffer(m_Buffers[renderable.indexBufferHandle.id].buffer.buffer, 0, vk::IndexType::eUint32);
         PerRenderableConstants constants{};
-        constants.modelMatrix = glm::mat4(1.0f);
-        constants.modelMatrix = glm::translate(constants.modelMatrix, {0, 0, -5.f});
+        constants.modelMatrix = renderable.modelMatrix;
+        constants.modelMatrix = glm::translate(constants.modelMatrix, {0.f, -10.f, 00.f});
+        constants.modelMatrix = glm::rotate(constants.modelMatrix, timestep * glm::radians(60.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        constants.modelMatrix = glm::rotate(constants.modelMatrix, glm::radians(75.f), glm::vec3(0.0f, 1.f,0.f));
         constants.modelMatrix = glm::rotate(constants.modelMatrix, glm::radians(180.f), glm::vec3(0.0f, 0.f,1.f));
-        constants.modelMatrix = glm::rotate(constants.modelMatrix, timestep * glm::radians(60.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         constants.materialIndex = renderable.materialIndex;
         constants.vertexBufferAddress = m_Buffers[renderable.vertexBufferHandle.id].buffer.bufAddress;
         perFrameData[frameIndex].graphicsCommandBuffer.pushConstants(m_PipelineLayout,
@@ -1038,7 +1044,7 @@ uint32_t LE::VulkanRHI::allocImageIndex(const VulkanImage& image, uint64_t hashI
     {
         idx = m_ImagesFreeList.back();
         m_ImagesFreeList.pop_back();
-        m_Images[idx] = {image, hashID};
+        m_Images[idx] = {image, hashID, 0};
     }
     else {
         assert(m_Images.size() <= MAX_BINDLESS_TEXTURES && "Max number of images reached! Cannot allocate anymore!");
@@ -1060,7 +1066,6 @@ void LE::VulkanRHI::processDeferredFrees_Images() {
     for (size_t i = 0; i < m_ImagesPendingFrees.size();)
     {
         PendingFree& pf = m_ImagesPendingFrees[i];
-        // Non-blocking check
         VkResult status = vkGetFenceStatus(vkCtx->device, pf.fence);
         if (status == VK_SUCCESS)
         {
@@ -1125,7 +1130,6 @@ void LE::VulkanRHI::processDeferredFrees_Buffer() {
     for (size_t i = 0; i < m_BuffersPendingFrees.size();)
     {
         PendingFree& pf = m_BuffersPendingFrees[i];
-        // Non-blocking check
         VkResult status = vkGetFenceStatus(vkCtx->device, pf.fence);
         if (status == VK_SUCCESS)
         {

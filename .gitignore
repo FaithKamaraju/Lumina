@@ -2,9 +2,10 @@ cmake-build-debug
 cmake-build-release
 SampleProject/Binaries
 Resources/Models
-SampleProject/Content/Assets
 
 .idea
 Resources/.DS_Store
 .DS_Store
 ToDo.md
+/Binaries
+/LuminaEditor/Binaries

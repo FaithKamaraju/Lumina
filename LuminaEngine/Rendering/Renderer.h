@@ -3,9 +3,9 @@
 //
 
 #pragma once
-#include "Scene/Scenegraph.h"
 #include "Renderable.h"
 #include "RenderingConstants.h"
+#include "Rendering/Pipeline.h"
 
 
 namespace LE {
@@ -20,7 +20,7 @@ namespace LE {
         Renderer(AssetRegistry* registry, RHI* rhi);
         ~Renderer() = default;
 
-        void WalkScenegraph(const Scenegraph& scenegraph, float timestep);
+        void WalkScenegraph(float timestep);
 
 
 

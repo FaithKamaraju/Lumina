@@ -5,11 +5,11 @@
 #include "RHI.h"
 #include "Platform/Vulkan/VulkanRHI.h"
 
-LE::RHI * LE::CreateRHI(GraphicsAPI api) {
+LE::Ref<LE::RHI> LE::CreateRHI(GraphicsAPI api) {
 
     switch (api) {
         case GraphicsAPI::VULKAN:
-            return new VulkanRHI();
+            return CreateRef<VulkanRHI>();
         case GraphicsAPI::D3D12:
         case GraphicsAPI::METAL:
             return nullptr;

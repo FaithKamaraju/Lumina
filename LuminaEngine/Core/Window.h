@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "Core/LE_Types.h"
 
 struct GLFWwindow;
 
@@ -37,7 +38,7 @@ namespace LE {
     };
 
 
-    Window* CreateWindow(int width, int height, const char* title, bool vsync, bool fullscreen);
+    Ref<Window> CreateWindow(int width, int height, const char* title, bool vsync, bool fullscreen);
 
 
 }

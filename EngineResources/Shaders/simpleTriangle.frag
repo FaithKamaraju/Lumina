@@ -56,6 +56,4 @@ void main() {
     uint baseColorSamp = matData.mats[per_object_data.materialIndex].baseColorImageSamplerIndex;
     uint baseColorTexCoord = matData.mats[per_object_data.materialIndex].baseColorTextureTexCoord;
     outColor = texture(sampler2D(Textures[nonuniformEXT(baseColor)], Samplers[nonuniformEXT(baseColorSamp)]), outTexCoord);
-
-//    outColor = vec4(0.5, 0.2, 0.8, 1.0);
 }

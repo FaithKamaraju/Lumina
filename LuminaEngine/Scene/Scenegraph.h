@@ -4,12 +4,23 @@
 
 #pragma once
 #include "Scene.h"
+#include "Rendering/Renderer.h"
 
 namespace LE {
 
-    struct Scenegraph {
+    class Scenegraph {
+    public:
 
-        std::vector<SceneNode> nodes;
+        Scenegraph();
+
+        void AddSceneAtIndex(std::vector<SceneNode>& nodes, int32_t parentIndex, int32_t previousSiblingIndex = -1 );
+        void AddNodeAtIndex(SceneNode& node, int32_t parentIndex, int32_t previousSiblingIndex = -1);
+
+    private:
+
+        std::vector<Hierarchy> mNodeHierarchies;
+
+        friend class Renderer;
 
     };
 }

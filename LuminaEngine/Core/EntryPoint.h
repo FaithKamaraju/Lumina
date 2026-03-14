@@ -6,4 +6,6 @@
 
 #include "../Game.h"
 
-extern LE::Game* LE::CreateGame();
+
+
+

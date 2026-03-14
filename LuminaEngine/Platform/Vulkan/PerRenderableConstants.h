@@ -8,6 +8,6 @@ namespace LE {
     struct PerRenderableConstants {
         glm::mat4 modelMatrix{1.f};
         uint64_t vertexBufferAddress{};
-        uint32_t materialIndex{};
+        uint32_t materialIndex {};
     };
 }

@@ -32,10 +32,14 @@ LE::ResourceManager* LE::Globals::GetResourceManager() {
     return gEngine->GetResourceManager();
 }
 
+LE::Coordinator * LE::Globals::GetCoordinator() {
+    return gEngine->GetCoordinator();
+}
+
 LE::Config& LE::Globals::GetConfig() {
     return gEngine->GetConfig();
 }
 
-LE::Scenegraph& LE::Globals::GetCurrentSceneGraph() {
+LE::Scenegraph* LE::Globals::GetCurrentSceneGraph() {
     return gEngine->GetScenegraph();
 }

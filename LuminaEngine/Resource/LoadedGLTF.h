@@ -24,8 +24,8 @@ namespace LE {
     };
 
     struct GLTFImageAndSamplerIDXHolder {
-        size_t imageIndex{};
-        size_t sampIndex{};
+        int32_t imageIndex{};
+        int32_t sampIndex{};
     };
 
     struct GLTFMetallicRoughnessMaterialData {
@@ -58,10 +58,14 @@ namespace LE {
     };
 
     struct SceneNodeData {
-        int32_t meshIndex{};
+        int32_t meshIndex = -1;
         glm::mat4 localTransform{1.f};
         glm::mat4 globalTransform{1.f};
-        Hierarchy hierarchy{};
+        int32_t parent = -1;
+        int32_t firstChild = -1;
+        int32_t nextSibling = -1;
+        int32_t lastChild = -1;
+        int32_t level = 0;
         std::string debug_name;
     };
 
@@ -157,13 +161,16 @@ namespace LE {
     }
 
     template<class Archive>
-    void serialize(Archive& archive, Hierarchy& hierarchy) {
-        archive(hierarchy.parent, hierarchy.firstChild, hierarchy.nextSibling, hierarchy.lastSibling, hierarchy.level);
-    }
-    template<class Archive>
     void serialize(Archive& archive, SceneNodeData& scene_node) {
-        archive(scene_node.meshIndex, scene_node.localTransform, scene_node.globalTransform,
-            scene_node.hierarchy, scene_node.debug_name);
+        archive(scene_node.meshIndex,
+            scene_node.localTransform,
+            scene_node.globalTransform,
+            scene_node.parent,
+            scene_node.firstChild,
+            scene_node.nextSibling,
+            scene_node.lastChild,
+            scene_node.level,
+            scene_node.debug_name);
     }
 
 

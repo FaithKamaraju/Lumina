@@ -75,9 +75,9 @@ void LE::Window::InitWindow() {
 
 }
 
-LE::Window* LE::CreateWindow(int width, int height, const char* title, bool vsync, bool fullscreen)
+LE::Ref<LE::Window> LE::CreateWindow(int width, int height, const char* title, bool vsync, bool fullscreen)
 {
-    auto temp = new Window(width, height, title, vsync, fullscreen);
+    auto temp = CreateRef<Window>(width, height, title, vsync, fullscreen);
     temp->InitWindow();
     return temp;
 }

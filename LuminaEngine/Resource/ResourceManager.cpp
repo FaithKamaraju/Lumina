@@ -22,7 +22,9 @@
 #include "TextureAsset.h"
 #include "MaterialAsset.h"
 #include "Core/EngineStatics.h"
+#include "Core/FileSystem.h"
 #include "Rendering/RenderingConstants.h"
+#include "Scene/Scenegraph.h"
 
 
 constexpr XXH64_hash_t HASH_SEED = 12345;
@@ -35,9 +37,14 @@ LE::ResourceManager::ResourceManager(RHI *rhi, AssetRegistry *registry) : mRHI(r
 
 }
 
+LE::ResourceManager::~ResourceManager() {
+
+}
+
 LEBool LE::ResourceManager::Initialize() {
 
     initializeShader_cCompiler();
+    generateDefaultSampler();
     generateDefaultTextures();
     prepareDefaultPBRShaders();
 
@@ -45,22 +52,24 @@ LEBool LE::ResourceManager::Initialize() {
 }
 
 
-LEBool LE::ResourceManager::ImportGLTFFile(const std::filesystem::path& filepath, std::string outAssetName) {
+LEBool LE::ResourceManager::CreateSceneAssetFromGLTF(const std::filesystem::path& inPath,
+    const std::filesystem::path& outPath, std::string outAssetName) {
 
-    auto gltfScene = processGLTFFile(filepath);
+    auto gltfScene = processGLTFFile(inPath);
 
     if (!gltfScene.has_value()) {
-        LE_CORE_INFO("Couldn't load the gltf file from filepath: {0}", filepath.string());
+        LE_CORE_INFO("Couldn't load the gltf file from filepath: {0}", inPath.string());
         return LE_FAILURE;
     }
 
     if (outAssetName.empty()) {
-        outAssetName = filepath.stem().string() + ".LEASSET";
+        outAssetName = inPath.stem().string() + ".LEASSET";
     }
     if (outAssetName.find(".LEASSET") == std::string::npos) {
         outAssetName += ".LEASSET";
     }
-    std::ofstream file{"../../../Content/Assets/" + outAssetName, std::ios::binary};
+
+    std::ofstream file{ outPath.string() + outAssetName, std::ios::binary};
     {
         cereal::PortableBinaryOutputArchive oarchive(file);
         oarchive(gltfScene.value());
@@ -70,9 +79,9 @@ LEBool LE::ResourceManager::ImportGLTFFile(const std::filesystem::path& filepath
 
 }
 
-void LE::ResourceManager::LoadSceneAsset(const std::filesystem::path &filepath, const SceneNode& parentNode) {
+void LE::ResourceManager::LoadSceneAsset(const std::filesystem::path &inPath, int32_t parentIndex, int32_t previousSiblingIndex) {
 
-    std::ifstream file{filepath, std::ios::binary};
+    std::ifstream file{inPath, std::ios::binary};
     LoadedGLTF gltf;
     {
         cereal::PortableBinaryInputArchive iarchive(file);
@@ -96,14 +105,25 @@ void LE::ResourceManager::LoadSceneAsset(const std::filesystem::path &filepath, 
     std::vector<TextureAssetHandle> texture_asset_handles;
     texture_asset_handles.reserve(gltf.textures.size());
     for (auto& texture : gltf.textures) {
-        TextureAsset texAsset{image_handles[texture.imageIndex], sampler_handles[texture.sampIndex]};
+        TextureAsset texAsset;
+        if (texture.imageIndex == -1) {
+            texAsset.imgHandle = mRegistry->GetDefaultCheckboardErrorImageHandle();
+        }
+        else {
+            texAsset.imgHandle = image_handles[texture.imageIndex];
+        }
+        if (texture.sampIndex == -1) {
+            texAsset.samplerHandle = mRegistry->GetDefaultSamplerHandle();
+        }
+        else {
+            texAsset.samplerHandle = sampler_handles[texture.sampIndex];
+        }
         texture_asset_handles.push_back( mRegistry->RegisterTextureAsset(texAsset));
     }
 
     std::vector<PBR_MR_MaterialInstanceHandle> material_asset_handles;
     material_asset_handles.reserve(gltf.materials.size());
     for (auto& material : gltf.materials) {
-        // TODO  - ADD AND ELSE STATEMENT TO LOAD ERROR OR DEFAULT TEXTURES IF BASE COLOR TEXTURE IS NOT PRESENT!
         PBR_MR_MaterialInstance mat{};
         if (material.baseColorTextureIndex != -1) {
             mat.baseColorTextureAsset = texture_asset_handles[material.baseColorTextureIndex];
@@ -153,14 +173,21 @@ void LE::ResourceManager::LoadSceneAsset(const std::filesystem::path &filepath, 
         scene_node.localTransform = node.localTransform;
         scene_node.globalTransform = node.globalTransform;
         scene_node.debug_name = node.debug_name;
-        scene_node.hierarchy = node.hierarchy;
-        scene_node.meshHandle = mesh_asset_handles[node.meshIndex];
+        scene_node.parent = node.parent;
+        scene_node.firstChild = node.firstChild;
+        scene_node.nextSibling = node.nextSibling;
+        scene_node.lastChild = node.lastChild;
+        scene_node.level = node.level;
+        if (node.meshIndex == -1) {
+            scene_node.meshHandle = {};
+        }
+        else {
+            scene_node.meshHandle = mesh_asset_handles[node.meshIndex];
+        }
         scene_nodes.push_back(scene_node);
     }
 
-    Globals::GetCurrentSceneGraph().nodes.insert(Globals::GetCurrentSceneGraph().nodes.end(),
-        scene_nodes.begin(), scene_nodes.end());
-
+    Globals::GetCurrentSceneGraph()->AddSceneAtIndex(scene_nodes, parentIndex, previousSiblingIndex);
 }
 
 
@@ -180,7 +207,95 @@ LE::ShaderHandle LE::ResourceManager::CreateShaderObject(const std::string &file
     return mRHI->CreateShaderModule(hash, spvBinary);
 }
 
+LEBool LE::ResourceManager::CreateInputActionAsset(const std::filesystem::path &outPath, std::string outAssetName) {
+
+    InputActionAsset action{};
+
+    if (outAssetName.empty()) {
+        outAssetName = "InputAction.LEASSET";
+    }
+    else if (outAssetName.find(".LEASSET") == std::string::npos) {
+        outAssetName += ".LEASSET";
+    }
+    outAssetName = FileSystem::MakeUniqueNameBySuffix(outPath.string() + outAssetName).string();
+    std::ofstream file{outAssetName, std::ios::binary};
+    if (!file.is_open()) {
+        LE_CORE_ERROR("Couldn't open/create input action asset file at {0}", outAssetName);
+        return LE_FAILURE;
+    }
+    {
+        cereal::PortableBinaryOutputArchive oarchive(file);
+        oarchive(action);
+    }
+
+    return LE_SUCCESS;
+
+}
+
+LE::InputActionAssetHandle LE::ResourceManager::LoadInputActionAsset(const std::filesystem::path &inPath) {
+    InputActionAsset action;
+
+    std::ifstream file{inPath, std::ios::binary};
+    if (!file.is_open()) {
+        LE_CORE_ERROR("Couldn't open/read input action asset file at {0}", inPath.string());
+        return {};
+    }
+    {
+        cereal::PortableBinaryInputArchive iarchive(file);
+        iarchive(action);
+    }
+    // mRegistry.
+}
+
+LEBool LE::ResourceManager::SaveInputActionAsset(const InputActionAsset &asset, const std::filesystem::path &outPath, std::string outAssetName) {
+
+    std::ofstream file{outPath.string() + outAssetName, std::ios::binary};
+    if (!file.is_open()) {
+        LE_CORE_ERROR("Couldn't open/create input action asset file {1} at {0}", outPath.string(), outAssetName);
+        return LE_FAILURE;
+    }
+    {
+        cereal::PortableBinaryOutputArchive oarchive(file);
+        oarchive(asset);
+    }
+
+    return LE_SUCCESS;
+}
+
+
+void LE::ResourceManager::generateDefaultSampler() {
+    SamplerKey sampl{};
+    sampl.maxLod = 1000.f;
+    sampl.minLod = 0;
+    sampl.addressModeU = SamplerAddressMode::Repeat;
+    sampl.addressModeV = SamplerAddressMode::Repeat;
+
+    sampl.magFilter = Filter::Nearest;
+    sampl.minFilter = Filter::Nearest;
+
+    sampl.mipmapMode = SamplerMipmapMode::Nearest;
+
+    sampl.GenerateHash();
+    mRegistry->SetDefaultSamplerHandle(mRHI->CreateImageSampler(sampl));
+
+}
+
+void LE::ResourceManager::generateDefaultMaterial() {
+}
+
 void LE::ResourceManager::generateDefaultTextures() {
+
+    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 1));
+    uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+    std::array<uint32_t, 16 *16 > pixels; //for 16x16 checkerboard texture
+    for (int x = 0; x < 16; x++) {
+        for (int y = 0; y < 16; y++) {
+            pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+        }
+    }
+    auto hashID = XXH3_64bits_withSeed(pixels.data(), 16 * 16 * 4, HASH_SEED);
+    mRegistry->SetDefaultCheckboardErrorImageHandle(mRHI->CreateImage(hashID, reinterpret_cast<unsigned char *>(pixels.data()), 4, {16, 16, 1},
+            ImageFormat::R8G8B8A8_SRGB, ImageUsageFlags::ShaderRead, false));
 
 }
 
@@ -229,11 +344,20 @@ std::optional<LE::LoadedGLTF> LE::ResourceManager::processGLTFFile(const std::fi
 
     for (fastgltf::Texture& texture : gltf.textures) {
         GLTFImageAndSamplerIDXHolder holder{};
-        holder.imageIndex = texture.imageIndex.value();
-        holder.sampIndex = texture.samplerIndex.value();
+        if (!texture.imageIndex.has_value() || texture.imageIndex.value() >= file.images.size()) {
+            holder.imageIndex = -1;
+        }
+        else {
+            holder.imageIndex = static_cast<int32_t>(texture.imageIndex.value());
+        }
+        if (texture.samplerIndex.has_value()) {
+            holder.sampIndex = static_cast<int32_t>(texture.samplerIndex.value());
+        }
+        else {
+            holder.sampIndex = -1;
+        }
         file.textures.push_back(holder);
     }
-
 
     for (fastgltf::Material& mat: gltf.materials) {
 
@@ -243,6 +367,11 @@ std::optional<LE::LoadedGLTF> LE::ResourceManager::processGLTFFile(const std::fi
         if (mat.pbrData.baseColorTexture.has_value()) {
             material_asset.baseColorTextureIndex = static_cast<int32_t>(mat.pbrData.baseColorTexture->textureIndex);
             material_asset.baseColorTextureTexCoord = static_cast<int32_t>(mat.pbrData.baseColorTexture->texCoordIndex);
+            file.images[file.textures[material_asset.baseColorTextureIndex].imageIndex].bIsSRGB = true;
+        }
+        else {
+            material_asset.baseColorTextureIndex = -1;
+            material_asset.baseColorTextureTexCoord = 0;
             file.images[file.textures[material_asset.baseColorTextureIndex].imageIndex].bIsSRGB = true;
         }
         if (mat.pbrData.metallicRoughnessTexture.has_value()) {
@@ -361,46 +490,56 @@ std::optional<LE::LoadedGLTF> LE::ResourceManager::processGLTFFile(const std::fi
     }
 
     file.scene_debug_name = gltf.scenes[0].name;
-    file.nodes.reserve(gltf.scenes[0].nodeIndices.size());
+    file.nodes.reserve(gltf.nodes.size() + 1);
+    SceneNodeData rootNode = {};
+    rootNode.debug_name = gltf.scenes[0].name;
+    file.nodes.push_back(rootNode);
 
     auto traverse = [&](size_t nodeIndex, int parent, int atLevel, fastgltf::math::fmat4x4 nodeMatrix, auto& self) -> void {
         assert(gltf.nodes.size() > nodeIndex);
         SceneNodeData newSceneNode{};
         auto& node = gltf.nodes[nodeIndex];
         nodeMatrix = fastgltf::getTransformMatrix(node, nodeMatrix);
-        if (node.meshIndex.has_value()) newSceneNode.meshIndex = node.meshIndex.value();
+        if (node.meshIndex.has_value()) {
+            newSceneNode.meshIndex = node.meshIndex.value();
+        }
+        else {
+            newSceneNode.meshIndex = -1;
+        }
         newSceneNode.debug_name = node.name;
         Math::toGLM(newSceneNode.localTransform, fastgltf::getLocalTransformMatrix(node));
         Math::toGLM(newSceneNode.globalTransform, nodeMatrix);
 
-        newSceneNode.hierarchy.parent = parent;
-        // newSceneNode.hierarchy.firstChild = node.children.empty() ? -1 : static_cast<int>(node.children[0]);
-        newSceneNode.hierarchy.level = atLevel;
+        int newIndex = static_cast<int>(file.nodes.size());
+
+        newSceneNode.parent = parent;
+        newSceneNode.level = atLevel;
         if (parent > -1) {
-            const int parentsFirstChild = file.nodes[parent].hierarchy.firstChild;
+            const int parentsFirstChild = file.nodes[parent].firstChild;
             if (parentsFirstChild == -1) {
-                file.nodes[parent].hierarchy.firstChild = static_cast<int>(nodeIndex) ;
-                file.nodes[nodeIndex].hierarchy.lastSibling = static_cast<int>(nodeIndex);
+                file.nodes[parent].firstChild = newIndex;
             }
             else {
-                int dest = file.nodes[parentsFirstChild].hierarchy.lastSibling;
+                int dest = file.nodes[parent].lastChild;
                 if (dest <= -1) {
                     for (dest = parentsFirstChild;
-                         file.nodes[dest].hierarchy.nextSibling !=-1;
-                         dest = file.nodes[dest].hierarchy.nextSibling);
+                         file.nodes[dest].nextSibling !=-1;
+                         dest = file.nodes[dest].nextSibling);
                 }
-                file.nodes[dest].hierarchy.nextSibling = static_cast<int>(nodeIndex);
-                file.nodes[parentsFirstChild].hierarchy.lastSibling = static_cast<int>(nodeIndex);
+                file.nodes[dest].nextSibling = newIndex;
             }
+            file.nodes[parent].lastChild = newIndex;
         }
-
         file.nodes.push_back(newSceneNode);
+
         for (auto& child : node.children) {
-            self(child, nodeIndex, atLevel+1, nodeMatrix, self);
+            self(child, newIndex, atLevel+1, nodeMatrix, self);
         }
     };
 
-    traverse(gltf.scenes[0].nodeIndices[0] ,-1,0,fastgltf::math::fmat4x4{1.f},traverse);
+    for (int i = 0; i < gltf.scenes[0].nodeIndices.size(); i++) {
+        traverse(gltf.scenes[0].nodeIndices[i] ,0,1,fastgltf::math::fmat4x4{1.f},traverse);
+    }
 
     return file;
 }

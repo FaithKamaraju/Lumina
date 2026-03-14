@@ -65,5 +65,5 @@ namespace LE {
 
     };
 
-    RHI* CreateRHI(GraphicsAPI api);
+    Ref<RHI> CreateRHI(GraphicsAPI api);
 }

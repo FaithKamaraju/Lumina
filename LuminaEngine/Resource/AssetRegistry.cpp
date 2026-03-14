@@ -53,6 +53,22 @@ void LE::AssetRegistry::DeregisterMeshAsset(MeshAssetHandle handle) {
     unbindMeshAsset(handle);
 }
 
+void LE::AssetRegistry::SetDefaultSamplerHandle(SamplerHandle handle) {
+    DEFAULT_SAMPLER_HANDLE = handle;
+}
+
+LE::SamplerHandle LE::AssetRegistry::GetDefaultSamplerHandle() {
+    return DEFAULT_SAMPLER_HANDLE;
+}
+
+void LE::AssetRegistry::SetDefaultCheckboardErrorImageHandle(ImageHandle handle) {
+    DEFAULT_CHECKERBOARD_ERROR_IMAGE = handle;
+}
+
+LE::ImageHandle LE::AssetRegistry::GetDefaultCheckboardErrorImageHandle() {
+    return DEFAULT_CHECKERBOARD_ERROR_IMAGE;
+}
+
 void LE::AssetRegistry::SetDefaultPBRShaderHandles(ShaderHandle vert, ShaderHandle frag) {
     DEFAULT_PBR_VERTEX_SHADER= vert;
     DEFAULT_PBR_FRAG_SHADER = frag;

@@ -28,3 +28,6 @@
 [submodule "LuminaEngine/external/xxHash"]
 	path = LuminaEngine/external/xxHash
 	url = https://github.com/Cyan4973/xxHash.git
+[submodule "LuminaEngine/external/meshopt"]
+	path = LuminaEngine/external/meshopt
+	url = https://github.com/FaithKamaraju/meshoptimizer.git

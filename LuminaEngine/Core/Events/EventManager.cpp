@@ -6,6 +6,10 @@
 #include "Core/Logger.h"
 
 
+LE::EventManager::~EventManager() {
+   Shutdown();
+}
+
 void LE::EventManager::Shutdown()
 {
     m_EventQueue.clear();

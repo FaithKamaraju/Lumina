@@ -4,22 +4,25 @@
 
 #include "Renderer.h"
 
-#include "GPUMaterialData.h"
-#include "SceneData.h"
+#include "Core/EngineStatics.h"
+#include "ECS/Coordinator.h"
 #include "Resource/AssetRegistry.h"
 #include "Rendering/RHI.h"
+#include "Scene/Scenegraph.h"
 
 
 LE::Renderer::Renderer(AssetRegistry *registry, RHI* rhi) : mRegistry(registry), mRHI(rhi) {
 
 }
 
-void LE::Renderer::WalkScenegraph(const Scenegraph &scenegraph, float timestep) {
+void LE::Renderer::WalkScenegraph(float timestep) {
     std::vector<Renderable> renderables;
-    renderables.reserve(scenegraph.nodes.size());
-    for ( auto& node : scenegraph.nodes) {
-        if (node.meshHandle.id == -1) continue;
-        auto& mesh = mRegistry->Meshes[node.meshHandle.id];
+    auto scenegraph = Globals::GetCurrentSceneGraph();
+    renderables.reserve(scenegraph->mNodeHierarchies.size());
+    for ( auto& node : scenegraph->mNodeHierarchies) {
+        auto& meshHandle = Globals::GetCoordinator()->GetComponent<MeshAssetHandle>(node.entityID);
+        if (meshHandle.id == -1) continue;
+        auto& mesh = mRegistry->Meshes[meshHandle.id];
 
         for (auto& submesh : mesh.meshAsset.subMeshes) {
             Renderable item{};
@@ -36,7 +39,8 @@ void LE::Renderer::WalkScenegraph(const Scenegraph &scenegraph, float timestep) 
             desc.cullMode = mat.materialInstance.cullMode;
 
             item.pipelineHandle = getPipelineHandle(desc);
-            item.modelMatrix = node.globalTransform;
+            auto& transform = Globals::GetCoordinator()->GetComponent<TransformComponent>(node.entityID);
+            item.modelMatrix = transform.globalTransform;
             item.materialIndex = submesh.materialHandle.id;
             renderables.emplace_back(item);
         }

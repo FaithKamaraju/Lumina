@@ -3,6 +3,9 @@
 //
 
 #pragma once
+#include <glm/glm.hpp>
+#include "Rendering/Pipeline.h"
+#include "Rendering/Buffer.h"
 
 namespace LE {
 

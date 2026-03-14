@@ -36,6 +36,7 @@ add_subdirectory(external/glm/)
 add_subdirectory(external/spdlog/)
 add_subdirectory(external/shaderc/)
 add_subdirectory(external/fastgltf/)
+add_subdirectory(external/meshopt/)
 #add_subdirectory(external/volk/)
 
 add_library(VulkanCppModule INTERFACE)
@@ -49,7 +50,22 @@ target_compile_definitions(VulkanCppModule
         XXH_NO_EXTERNC_GUARD=1
 )
 
-add_library(${PROJECT_NAME} STATIC
+# Set the output directory for all runtime targets (executables/DLLs)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../Binaries/$<CONFIG>/bin)
+
+# Optionally, set output directories for static and shared libraries
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../Binaries/$<CONFIG>/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../Binaries/$<CONFIG>/lib)
+
+file(GLOB_RECURSE LUMINA_ENGINE_SOURCES
+        CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/*.h
+)
+
+list(FILTER LUMINA_ENGINE_SOURCES EXCLUDE REGEX ".*external/.*")
+
+add_library(LuminaEngine STATIC
 
         #xxHash files
         external/xxHash/xxhash.c
@@ -67,91 +83,12 @@ add_library(${PROJECT_NAME} STATIC
         external/vma/src/VmaUsage.h
         external/vma/src/VmaUsage.cpp
 
-        #Engine source files
-        LuminaEngine.h
-        Core/EntryPoint.cpp
-        Core/EntryPoint.h
-        Game.cpp
-        Game.h
-        Core/EngineStatics.h
-        Core/EngineStatics.cpp
-        Core/Logger.cpp
-        Core/Logger.h
-        Core/Engine.cpp
-        Core/Engine.h
-        Core/LE_Types.h
-        Core/Window.cpp
-        Core/Window.h
-        Layers/Layer.h
-        Layers/Layer.cpp
-        Layers/LayerStack.h
-        Layers/LayerStack.cpp
-        Rendering/RHI.h
-        Core/Events/Event.h
-        Core/Events/EventHandler.h
-        Core/Events/EventManager.cpp
-        Core/Events/EventManager.h
-        Core/Events/KeyEvent.h
-        Core/Events/WindowEvent.h
-        Resource/ResourceManager.cpp
-        Resource/ResourceManager.h
-        Rendering/Renderer.cpp
-        Rendering/Renderer.h
-        Core/Config.cpp
-        Core/Config.h
-        Platform/Vulkan/VulkanRHI.cpp
-        Platform/Vulkan/VulkanRHI.h
-        Platform/Vulkan/VulkanUtils.cpp
-        Platform/Vulkan/VulkanUtils.h
-        Platform/Vulkan/QueueFamilyIndices.h
-        Platform/Vulkan/VulkanImage.cpp
-        Platform/Vulkan/VulkanImage.h
-        Rendering/Image.h
-        Platform/Vulkan/VulkanBuffer.cpp
-        Platform/Vulkan/VulkanBuffer.h
-        Rendering/Buffer.h
-        Platform/Vulkan/VulkanContext.h
-        Platform/Vulkan/VulkanSwapChain.cpp
-        Platform/Vulkan/VulkanSwapChain.h
-        Rendering/VertexInput.h
-        Rendering/RenderingConstants.h
-        Rendering/Sampler.h
-        Platform/Vulkan/FrameData.cpp
-        Platform/Vulkan/FrameData.h
-        Platform/Vulkan/Descriptors.cpp
-        Platform/Vulkan/Descriptors.h
-        Platform/Vulkan/VulkanSampler.h
-        Rendering/Renderable.h
-        Rendering/Pipeline.h
-        Core/TasksManager.cpp
-        Core/TasksManager.h
-        Platform/Vulkan/VulkanPipeline.cpp
-        Platform/Vulkan/VulkanPipeline.h
-        Rendering/Shader.h
-        Resource/LoadedGLTF.h
-        Resource/MeshAsset.h
-        Scene/Scene.h
-        Resource/MaterialAsset.h
-        Resource/TextureAsset.h
-        Core/MathUtils.h
-        Core/CerealUtils.h
-        Scene/Scenegraph.cpp
-        Scene/Scenegraph.h
-        Core/DirectoryPathnames.h
-        Resource/AssetRegistry.cpp
-        Resource/AssetRegistry.h
-        Core/UtilFunctions.h
-        Platform/Vulkan/PerRenderableConstants.h
-        Rendering/SceneData.h
-        Rendering/GPUMaterialData.h
-        Rendering/RHI.cpp
-        Cameras/DefaultFlyCamera.cpp
-        Cameras/DefaultFlyCamera.h
-)
+        ${LUMINA_ENGINE_SOURCES})
+
 
 set_source_files_properties(external/xxHash/xxhash.c PROPERTIES LANGUAGE CXX)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC glfw glm spdlog Vulkan::cppm shaderc_combined fastgltf )
+target_link_libraries(${PROJECT_NAME} PUBLIC glfw glm spdlog Vulkan::cppm shaderc_combined fastgltf meshoptimizer )
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE lepch.h)
 
@@ -159,6 +96,11 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE lepch.h)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${LE_PLATFORM})
+if (LUMINA_HOT_RELOAD)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE LE_HOT_RELOAD=1)
+else()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE LE_HOT_RELOAD=0)
+endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC external/glfw/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC external/glm/)

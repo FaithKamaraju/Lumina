@@ -33,7 +33,7 @@ namespace LE {
     struct VulkanImageSlot {
         VulkanImage image{};
         uint64_t hashID{};
-        uint32_t numTextureRefs{};
+        uint32_t numTextureRefs = 0;
         uint32_t generation{};
     };
 
@@ -45,14 +45,14 @@ namespace LE {
     struct VulkanSamplerSlot {
         VkSampler sampler = VK_NULL_HANDLE;
         size_t hashID{};
-        uint32_t numTextureRefs{};
+        uint32_t numTextureRefs = 0;
         uint32_t generation{};
     };
 
     struct VulkanShaderSlot {
         vk::ShaderModule shaderModule = VK_NULL_HANDLE;
         uint64_t hashID{};
-        uint32_t numMaterialRefs{};
+        uint32_t numMaterialRefs = 0;
         uint32_t generation{};
     };
 

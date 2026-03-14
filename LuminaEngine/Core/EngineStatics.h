@@ -19,9 +19,12 @@ namespace LE {
         LayerStack* GetLayerStack();
         AssetRegistry* GetAssetRegistry();
         ResourceManager* GetResourceManager();
-        Config& GetConfig();
+        Coordinator* GetCoordinator();
+        Scenegraph* GetCurrentSceneGraph();
 
-        Scenegraph& GetCurrentSceneGraph();
+
+
+        Config& GetConfig();
 
 
 

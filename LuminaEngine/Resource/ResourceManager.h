@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "InputActionAsset.h"
 #include "shaderc/shaderc.hpp"
 #include "LoadedGLTF.h"
 #include "Core/LE_Types.h"
@@ -21,19 +22,32 @@ namespace LE {
     public:
         explicit ResourceManager(RHI* rhi, AssetRegistry* registry);
 
+        ~ResourceManager();
+
         LEBool Initialize();
 
+        // TODO Move to EditorResourceManager
+        LEBool CreateSceneAssetFromGLTF(const std::filesystem::path& inPath, const std::filesystem::path& outPath, std::string outAssetName = "");
+        LEBool CreateInputActionAsset(const std::filesystem::path &outPath, std::string outAssetName = "");
+        LEBool SaveInputActionAsset(const InputActionAsset& asset, const std::filesystem::path &outPath, std::string outAssetName);
 
-        LEBool ImportGLTFFile(const std::filesystem::path& filepath, std::string outAssetName = "");
-        void LoadSceneAsset(const std::filesystem::path& filepath, const SceneNode& parentNode);
+
+        void LoadSceneAsset(const std::filesystem::path& inPath, int32_t parentIndex, int32_t previousSiblingIndex);
 
         ShaderHandle CreateShaderObject(const std::string& fileName, ShaderStage stage);
 
+
+        InputActionAssetHandle LoadInputActionAsset(const std::filesystem::path& inPath);
+
+
     private:
 
+        void generateDefaultSampler();
         void generateDefaultTextures();
         void prepareDefaultPBRShaders();
+        void generateDefaultMaterial();
 
+        // TODO Move to EditorResourceManager
         std::optional<LoadedGLTF> processGLTFFile(const std::filesystem::path& filepath);
 
         void initializeShader_cCompiler(shaderc_optimization_level optimizationLevel = shaderc_optimization_level_zero,

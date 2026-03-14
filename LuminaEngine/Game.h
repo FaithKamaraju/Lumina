@@ -19,7 +19,13 @@ namespace LE {
 #define START() LE::Game::Start()
 #define UPDATE() LE::Game::Update()
 
-    Game* CreateGame();
+    using CreateGameFn = Game* (*)();
+
+    inline CreateGameFn gameCreate = nullptr;
+
+    inline void SetCreateGameFunction(CreateGameFn fn) {
+        gameCreate = fn;
+    }
 
 }
 

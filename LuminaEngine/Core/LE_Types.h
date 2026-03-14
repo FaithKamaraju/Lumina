@@ -3,7 +3,6 @@
 //
 
 #pragma once
-#include <type_traits>
 
 using LEBool = bool;
 

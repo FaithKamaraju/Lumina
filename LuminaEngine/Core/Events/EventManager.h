@@ -12,6 +12,7 @@ namespace LE {
     class EventManager {
 
     public:
+        ~EventManager();
 
         void Shutdown();
 
